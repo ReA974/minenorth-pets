@@ -1,0 +1,67 @@
+package fr.minenorth.pets;
+
+import net.minecraftforge.common.ForgeConfigSpec;
+
+import java.util.List;
+import java.util.function.Supplier;
+
+/**
+ * config/minenorth_pets.toml (serveur dédié). Hors serveur dédié la config n'est pas chargée : les valeurs par défaut s'appliquent.
+ */
+public final class PetsConfig {
+    public static final ForgeConfigSpec SPEC;
+    private static final ForgeConfigSpec.DoubleValue FOLLOW_START, FOLLOW_STOP, FOLLOW_SPEED;
+    private static final ForgeConfigSpec.BooleanValue SIT_ON_EMPTY_HAND;
+    private static final ForgeConfigSpec.BooleanValue K9_POLICE_ONLY, K9_IGNORE_POLICE, K9_RIDE;
+    private static final ForgeConfigSpec.IntValue K9_RADIUS, K9_INTERVAL, K9_COOLDOWN, K9_BOARD;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> K9_ITEMS;
+
+    private static final List<String> DEFAULT_ITEMS = List.of(
+            "minenorthdrogue:joint", "minenorthdrogue:cocaine", "minenorthdrogue:meth",
+            "minenorthdrogue:cannabis_leaf", "minenorthdrogue:coca_leaf", "minenorthdrogue:ephedra",
+            "minenorthdrogue:coca_paste", "minenorthdrogue:cocaine_powder", "minenorthdrogue:meth_crystals",
+            "minenorthdrogue:cannabis_seeds", "minenorthdrogue:coca_seeds", "minenorthdrogue:ephedra_seeds");
+
+    static {
+        ForgeConfigSpec.Builder b = new ForgeConfigSpec.Builder();
+        b.comment("Animaux apprivoisés (Polly Pets)").push("compagnon");
+        FOLLOW_START = b.comment("Distance (blocs) à partir de laquelle l'animal rejoint son maître").defineInRange("distanceSuivi", 8.0, 2.0, 64.0);
+        FOLLOW_STOP = b.comment("Distance (blocs) à laquelle l'animal s'arrête près de son maître").defineInRange("distanceArret", 3.0, 1.0, 32.0);
+        FOLLOW_SPEED = b.comment("Vitesse de l'animal quand il suit son maître").defineInRange("vitesse", 1.1, 0.3, 3.0);
+        SIT_ON_EMPTY_HAND = b.comment("Clic droit à main nue sur son animal apprivoisé : s'asseoir / se lever").define("asseoirMainNue", true);
+        b.pop();
+        b.comment("Chien policier K9").push("k9");
+        K9_POLICE_ONLY = b.comment("Seuls les policiers (mod Police) peuvent équiper un chien en K9").define("reserveAPolice", true);
+        K9_IGNORE_POLICE = b.comment("Le chien K9 ne signale pas les policiers").define("ignorerPolice", true);
+        K9_RADIUS = b.comment("Rayon de flair (blocs)").defineInRange("rayon", 8, 2, 32);
+        K9_INTERVAL = b.comment("Délai (ticks) entre deux flairs").defineInRange("intervalleTicks", 20, 5, 200);
+        K9_COOLDOWN = b.comment("Secondes avant que le chien signale à nouveau la même personne").defineInRange("secondesEntreAlertes", 15, 1, 600);
+        K9_RIDE = b.comment("Le K9 monte dans les véhicules MTS de son maître (place passager libre)").define("monteEnVoiture", true);
+        K9_BOARD = b.comment("Distance maximale (blocs) entre le K9 et son maître pour qu'il monte").defineInRange("distanceMontee", 10, 2, 32);
+        K9_ITEMS = b.comment("Objets que le chien sait flairer (id complet, ex. minenorthdrogue:meth)")
+                .defineList("objetsFlaires", DEFAULT_ITEMS, o -> o instanceof String);
+        b.pop();
+        SPEC = b.build();
+    }
+
+    private PetsConfig() {}
+
+    /** Lit une valeur ; la config n'existe pas hors serveur dédié, on retombe alors sur la valeur par défaut. */
+    private static <T> T val(Supplier<T> s, T def) {
+        try { return s.get(); } catch (IllegalStateException e) { return def; }
+    }
+
+    public static double followStart() { return val(FOLLOW_START::get, 8.0); }
+    public static double followStop() { return val(FOLLOW_STOP::get, 3.0); }
+    public static double followSpeed() { return val(FOLLOW_SPEED::get, 1.1); }
+    public static boolean sitOnEmptyHand() { return val(SIT_ON_EMPTY_HAND::get, true); }
+    public static boolean k9PoliceOnly() { return val(K9_POLICE_ONLY::get, true); }
+    public static boolean k9IgnorePolice() { return val(K9_IGNORE_POLICE::get, true); }
+    public static int k9Radius() { return val(K9_RADIUS::get, 8); }
+    public static int k9Interval() { return val(K9_INTERVAL::get, 20); }
+    public static int k9CooldownSeconds() { return val(K9_COOLDOWN::get, 15); }
+    public static boolean k9RidesVehicles() { return val(K9_RIDE::get, true); }
+    public static int k9BoardDistance() { return val(K9_BOARD::get, 10); }
+    @SuppressWarnings("unchecked")
+    public static List<String> k9Items() { return val(() -> (List<String>) K9_ITEMS.get(), DEFAULT_ITEMS); }
+}

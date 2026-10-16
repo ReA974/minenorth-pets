@@ -1,0 +1,21 @@
+{
+  "item.minenorthpets.harnais_k9": "Harnais K9",
+  "item.minenorthpets.certificat_adoption": "Certificat d'adoption",
+  "itemGroup.minenorthpets.animaux_vetements": "Animaux & Vêtements",
+  "gui.minenorthpets.menu.title": "Mon animal",
+  "gui.minenorthpets.menu.pet": "Caresser",
+  "gui.minenorthpets.menu.play": "Jouer",
+  "gui.minenorthpets.menu.sleep": "Dormir",
+  "gui.minenorthpets.menu.wake": "Réveiller",
+  "gui.minenorthpets.menu.sit": "S'asseoir",
+  "gui.minenorthpets.menu.stand": "Se lever",
+  "gui.minenorthpets.menu.stay": "Rester ici",
+  "gui.minenorthpets.menu.follow": "Suivre",
+  "message.minenorthpets.pet": "§dIl adore les caresses !",
+  "message.minenorthpets.play": "§eIl est tout joyeux !",
+  "message.minenorthpets.rest": "§7Laissez-le souffler un instant.",
+  "message.minenorthpets.sleep": "§7Votre animal s'endort.",
+  "message.minenorthpets.wake": "§7Votre animal se réveille.",
+  "message.minenorthpets.stay": "§7Votre animal reste ici.",
+  "message.minenorthpets.follow": "§7Votre animal vous suit."
+}

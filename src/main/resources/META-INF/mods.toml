@@ -1,0 +1,38 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="All Rights Reserved - MineNorthRP"
+
+[[mods]]
+modId="minenorthpets"
+version="1.0.0"
+displayName="MineNorth Pets"
+authors="MineNorth RP"
+description='''Complément de Polly Pets : les animaux apprivoisés suivent leur maître et s'assoient sur ordre, et la police peut équiper un chien en chien K9 qui renifle la drogue (mod Drogue).'''
+
+[[dependencies.minenorthpets]]
+modId="forge"
+mandatory=true
+versionRange="[47,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.minenorthpets]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.21)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.minenorthpets]]
+modId="polly_pets"
+mandatory=true
+versionRange="[1.0.0,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.minenorthpets]]
+modId="geckolib"
+mandatory=true
+versionRange="[4.0,5)"
+ordering="AFTER"
+side="BOTH"

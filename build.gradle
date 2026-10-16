@@ -1,0 +1,48 @@
+plugins {
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+}
+
+group = 'fr.minenorth'
+version = '1.0.0'
+base { archivesName = 'minenorth-pets' }
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+minecraft {
+    mappings channel: 'official', version: '1.20.1'
+    copyIdeResources = true
+    runs {
+        configureEach {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            mods { minenorthpets { source sourceSets.main } }
+        }
+        client {}
+        server { args '--nogui' }
+    }
+}
+
+repositories {
+    // GeckoLib 4.8.4 : version réellement utilisée par le serveur / les clients (jar copié dans libs/, non versionné)
+    flatDir { dirs 'libs' }
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.20.1-47.4.10'
+    // GeckoLib : pose assise et harnais K9 sur les rendus de Polly Pets (compilation seulement, fourni par Polly Pets / le serveur)
+    compileOnly fg.deobf('blank:geckolib-forge-1.20.1:4.8.4')
+}
+jar {
+    manifest { attributes([
+        'Specification-Title': 'MineNorth Pets',
+        'Specification-Vendor': 'MineNorth RP',
+        'Specification-Version': '1',
+        'Implementation-Title': project.name,
+        'Implementation-Version': project.version,
+        'Implementation-Vendor': 'MineNorth RP'
+    ]) }
+}
+jar.finalizedBy('reobfJar')
