@@ -17,5 +17,19 @@
   "message.minenorthpets.sleep": "§7Votre animal s'endort.",
   "message.minenorthpets.wake": "§7Votre animal se réveille.",
   "message.minenorthpets.stay": "§7Votre animal reste ici.",
-  "message.minenorthpets.follow": "§7Votre animal vous suit."
+  "message.minenorthpets.follow": "§7Votre animal vous suit.",
+  "item.minenorthpets.collier_identification": "Collier d'identification",
+  "gui.minenorthpets.menu.lost": "Signaler perdu",
+  "gui.minenorthpets.menu.found": "Signaler retrouvé",
+  "gui.minenorthpets.menu.book": "Carnet de santé",
+  "gui.minenorthpets.menu.vaccine": "Vacciner",
+  "gui.minenorthpets.menu.heal": "Soigner",
+  "gui.minenorthpets.menu.remark": "Ajouter une remarque",
+  "gui.minenorthpets.menu.chip": "Poser la puce",
+  "gui.minenorthpets.book.title": "Carnet de santé",
+  "gui.minenorthpets.book.close": "Fermer",
+  "gui.minenorthpets.remark.title": "Remarque pour le carnet",
+  "gui.minenorthpets.remark.hint": "Ex. : patte avant fragile",
+  "gui.minenorthpets.remark.ok": "Ajouter",
+  "gui.minenorthpets.remark.cancel": "Annuler"
 }

@@ -16,7 +16,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * Ctrl + clic droit sur son animal apprivoisé : demande l'ouverture du menu (le serveur répond avec les états de l'animal).
+ * Ctrl + clic droit sur son animal apprivoisé : demande l'ouverture du menu (le serveur répond avec les états et les droits : maître, vétérinaire, police).
  * Annuler PlayerInteractEvent.EntityInteract côté client ne suffit pas : MultiPlayerGameMode.interact envoie déjà le paquet d'interaction
  * au serveur avant de lancer cet événement (le serveur nourrissait / asseyait donc l'animal en plus du menu). On coupe donc plus tôt, au niveau de la
  * touche « utiliser » (InputEvent.InteractionKeyMappingTriggered) : rien n'est envoyé, l'objet tenu n'est pas utilisé non plus.
@@ -31,7 +31,7 @@ public final class ClientPetEvents {
             if (!ev.isUseItem() || !Screen.hasControlDown()) return;
             Minecraft mc = Minecraft.getInstance();
             if (mc.player == null || mc.screen != null || !(mc.hitResult instanceof EntityHitResult hit)) return;
-            if (!(hit.getEntity() instanceof TamableAnimal pet) || !PetEvents.isPollyPet(pet) || !pet.isTame() || !pet.isOwnedBy(mc.player)) return;
+            if (!(hit.getEntity() instanceof TamableAnimal pet) || !PetEvents.isPollyPet(pet) || !pet.isTame()) return;
             ev.setCanceled(true);
             ev.setSwingHand(false);
             K9Net.CHANNEL.sendToServer(new K9Net.OpenRequest(pet.getId()));

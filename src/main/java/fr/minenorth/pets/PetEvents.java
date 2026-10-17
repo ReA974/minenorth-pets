@@ -92,17 +92,53 @@ public final class PetEvents {
         if (ev.getEntity() instanceof TamableAnimal pet && !pet.level().isClientSide() && PetActions.isSleeping(pet)) PetActions.wake(pet);
     }
 
+    /** Le carnet de santé commence à l'apprivoisement (date d'adoption). */
+    @SubscribeEvent(priority = net.minecraftforge.eventbus.api.EventPriority.LOW)
+    public static void onTame(net.minecraftforge.event.entity.living.AnimalTameEvent ev) {
+        if (!ev.isCanceled() && !ev.getAnimal().level().isClientSide() && isPollyPet(ev.getAnimal())) PetBook.ensure(ev.getAnimal());
+    }
+
     @SubscribeEvent
     public static void onInteract(PlayerInteractEvent.EntityInteract ev) {
-        if (ev.getHand() != InteractionHand.MAIN_HAND || !(ev.getTarget() instanceof TamableAnimal pet) || !isPollyPet(pet)) return;
-        if (!pet.isTame() || !pet.isOwnedBy(ev.getEntity())) return;
+        if (ev.getHand() != InteractionHand.MAIN_HAND || !(ev.getTarget() instanceof TamableAnimal pet) || !isPollyPet(pet) || !pet.isTame()) return;
         ItemStack st = ev.getEntity().getItemInHand(InteractionHand.MAIN_HAND);
+        boolean client = ev.getLevel().isClientSide();
+        // Accroupi, main nue, sur l'animal d'un autre : lire son collier.
+        if (!pet.isOwnedBy(ev.getEntity())) {
+            if (!ev.getEntity().isShiftKeyDown() || !st.isEmpty()) return;
+            ev.setCanceled(true);
+            ev.setCancellationResult(InteractionResult.sidedSuccess(client));
+            if (!client && ev.getEntity() instanceof ServerPlayer p) readCollar(p, pet);
+            return;
+        }
         boolean harness = st.is(ModItems.K9_HARNESS.get());
-        if (!harness && !(st.isEmpty() && PetsConfig.sitOnEmptyHand())) return;
+        boolean collar = st.is(ModItems.COLLAR.get());
+        if (!harness && !collar && !(st.isEmpty() && PetsConfig.sitOnEmptyHand())) return;
         ev.setCanceled(true);
-        ev.setCancellationResult(InteractionResult.sidedSuccess(ev.getLevel().isClientSide()));
-        if (ev.getLevel().isClientSide() || !(ev.getEntity() instanceof ServerPlayer p)) return;
-        if (harness) toggleK9(p, pet); else toggleSit(p, pet);
+        ev.setCancellationResult(InteractionResult.sidedSuccess(client));
+        if (client || !(ev.getEntity() instanceof ServerPlayer p)) return;
+        if (harness) toggleK9(p, pet); else if (collar) putCollar(p, pet, st); else toggleSit(p, pet);
+    }
+
+    private static void readCollar(ServerPlayer p, TamableAnimal pet) {
+        if (!PetBook.hasCollar(pet)) {
+            p.displayClientMessage(Component.literal("§7Cet animal n'a pas de collier d'identification."), true);
+            return;
+        }
+        String owner = Compat.displayName(p.server, pet.getOwnerUUID(), PetBook.collarOwner(pet));
+        p.displayClientMessage(Component.literal("§fCet animal appartient à §e" + owner + (PetBook.isLost(pet) ? " §c§l(signalé perdu)" : "")), true);
+    }
+
+    private static void putCollar(ServerPlayer p, TamableAnimal pet, ItemStack st) {
+        if (PetBook.hasCollar(pet)) {
+            p.displayClientMessage(Component.literal("§7Cet animal porte déjà un collier."), true);
+            return;
+        }
+        String owner = Compat.displayName(p.server, p.getUUID(), p.getGameProfile().getName());
+        PetBook.putCollar(pet, owner);
+        PetBook.ensure(pet);
+        if (!p.getAbilities().instabuild) st.shrink(1);
+        p.displayClientMessage(Component.literal("§aCollier posé : cet animal est enregistré au nom de §e" + owner + "§a."), true);
     }
 
     /** Assis / debout ; un animal qui dort se réveille (et se lève) au lieu de rester couché. */

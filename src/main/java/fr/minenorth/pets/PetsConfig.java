@@ -15,6 +15,8 @@ public final class PetsConfig {
     private static final ForgeConfigSpec.BooleanValue K9_POLICE_ONLY, K9_IGNORE_POLICE, K9_RIDE;
     private static final ForgeConfigSpec.IntValue K9_RADIUS, K9_INTERVAL, K9_COOLDOWN, K9_BOARD;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> K9_ITEMS;
+    private static final ForgeConfigSpec.ConfigValue<String> VET_COMPANY;
+    private static final ForgeConfigSpec.BooleanValue LOST_ALERT;
 
     private static final List<String> DEFAULT_ITEMS = List.of(
             "minenorthdrogue:joint", "minenorthdrogue:cocaine", "minenorthdrogue:meth",
@@ -41,6 +43,13 @@ public final class PetsConfig {
         K9_ITEMS = b.comment("Objets que le chien sait flairer (id complet, ex. minenorthdrogue:meth)")
                 .defineList("objetsFlaires", DEFAULT_ITEMS, o -> o instanceof String);
         b.pop();
+        b.comment("Vétérinaire et carnet de santé").push("veterinaire");
+        VET_COMPANY = b.comment("Nom de l'entreprise (mod Entreprises) dont les membres sont vétérinaires. Vide = personne (les opérateurs le sont toujours)")
+                .define("entreprise", "");
+        b.pop();
+        b.comment("Collier d'identification").push("collier");
+        LOST_ALERT = b.comment("« Signaler perdu / retrouvé » envoie un message à la police en service (mod Police)").define("alerterPolice", true);
+        b.pop();
         SPEC = b.build();
     }
 
@@ -62,6 +71,8 @@ public final class PetsConfig {
     public static int k9CooldownSeconds() { return val(K9_COOLDOWN::get, 15); }
     public static boolean k9RidesVehicles() { return val(K9_RIDE::get, true); }
     public static int k9BoardDistance() { return val(K9_BOARD::get, 10); }
+    public static String vetCompany() { return val(() -> VET_COMPANY.get(), ""); }
+    public static boolean lostAlertsPolice() { return val(LOST_ALERT::get, true); }
     @SuppressWarnings("unchecked")
     public static List<String> k9Items() { return val(() -> (List<String>) K9_ITEMS.get(), DEFAULT_ITEMS); }
 }

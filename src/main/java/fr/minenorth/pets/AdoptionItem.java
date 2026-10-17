@@ -65,6 +65,7 @@ public class AdoptionItem extends Item {
         if (e == null) return InteractionResult.FAIL;
         if (e instanceof TamableAnimal pet) {
             pet.tame(p);
+            PetBook.ensure(pet);
             pet.setOrderedToSit(false);
             pet.setInSittingPose(false);
             level.broadcastEntityEvent(pet, (byte) 7);

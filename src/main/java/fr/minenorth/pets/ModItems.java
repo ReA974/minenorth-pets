@@ -32,6 +32,9 @@ public final class ModItems {
         }
     });
 
+    /** Collier d'identification : enregistre le nom du maître sur l'animal. */
+    public static final RegistryObject<Item> COLLAR = ITEMS.register("collier_identification", CollarItem::new);
+
     /** Certificat d'adoption : l'espèce est dans le NBT. */
     public static final RegistryObject<Item> ADOPTION = ITEMS.register("certificat_adoption", AdoptionItem::new);
 
@@ -62,6 +65,7 @@ public final class ModItems {
 
     public static final CreativeModeTab.DisplayItemsGenerator TAB_ITEMS = (params, out) -> {
         out.accept(K9_HARNESS.get());
+        out.accept(COLLAR.get());
         for (ResourceLocation id : speciesIds()) out.accept(AdoptionItem.of(id));
     };
 

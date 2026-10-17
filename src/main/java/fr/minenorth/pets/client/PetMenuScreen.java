@@ -9,57 +9,88 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Menu d'actions d'un animal apprivoisé (Ctrl + clic droit). Panneau et boutons très arrondis, fond sombre translucide.
- * Les libellés dépendent de l'état reçu du serveur (assis, couché, reste sur place) ; chaque bouton envoie son action au serveur.
+ * Les boutons dépendent des droits envoyés par le serveur : le maître a les actions de compagnie (et « Signaler perdu » s'il y a un collier),
+ * le vétérinaire a les soins, tout le monde peut lire le carnet de santé. Plus de 6 boutons : deux colonnes.
  */
 public class PetMenuScreen extends Screen {
-    private static final int BUTTON_W = 170, BUTTON_H = 24, GAP = 6, PAD = 14, TITLE_H = 22;
+    private static final int BUTTON_W = 150, BUTTON_H = 24, GAP = 6, PAD = 14, TITLE_H = 22, MAX_ROWS = 6;
+
+    /** Un bouton : libellé, action serveur (ou null pour ouvrir l'écran de remarque). */
+    private record Entry(String labelKey, PetActions.Action action) {}
 
     private final int entityId;
     private final int flags;
+    private final List<Entry> entries = new ArrayList<>();
 
     private PetMenuScreen(int entityId, int flags) {
         super(Component.translatable("gui.minenorthpets.menu.title"));
         this.entityId = entityId;
         this.flags = flags;
+        build();
     }
 
     public static void open(int entityId, int flags) {
         Minecraft.getInstance().setScreen(new PetMenuScreen(entityId, flags));
     }
 
+    private boolean has(int flag) { return (flags & flag) != 0; }
+
+    private void build() {
+        if (has(PetActions.FLAG_OWNER)) {
+            boolean sitting = has(PetActions.FLAG_SITTING) && !has(PetActions.FLAG_SLEEPING);
+            entries.add(new Entry("gui.minenorthpets.menu.pet", PetActions.Action.PET));
+            entries.add(new Entry("gui.minenorthpets.menu.play", PetActions.Action.PLAY));
+            entries.add(new Entry(has(PetActions.FLAG_SLEEPING) ? "gui.minenorthpets.menu.wake" : "gui.minenorthpets.menu.sleep", PetActions.Action.SLEEP));
+            entries.add(new Entry(sitting ? "gui.minenorthpets.menu.stand" : "gui.minenorthpets.menu.sit", PetActions.Action.SIT));
+            entries.add(new Entry(has(PetActions.FLAG_STAYING) ? "gui.minenorthpets.menu.follow" : "gui.minenorthpets.menu.stay", PetActions.Action.STAY));
+            if (has(PetActions.FLAG_COLLAR)) {
+                entries.add(new Entry(has(PetActions.FLAG_LOST) ? "gui.minenorthpets.menu.found" : "gui.minenorthpets.menu.lost", PetActions.Action.LOST));
+            }
+        }
+        entries.add(new Entry("gui.minenorthpets.menu.book", PetActions.Action.BOOK));
+        if (has(PetActions.FLAG_VET)) {
+            entries.add(new Entry("gui.minenorthpets.menu.vaccine", PetActions.Action.VACCINE));
+            entries.add(new Entry("gui.minenorthpets.menu.heal", PetActions.Action.HEAL));
+            entries.add(new Entry("gui.minenorthpets.menu.remark", null));
+            entries.add(new Entry("gui.minenorthpets.menu.chip", PetActions.Action.CHIP));
+        }
+    }
+
+    private int cols() { return entries.size() > MAX_ROWS ? 2 : 1; }
+    private int rows() { return (entries.size() + cols() - 1) / cols(); }
+    private int panelWidth() { return cols() * BUTTON_W + (cols() - 1) * GAP + PAD * 2; }
+    private int panelHeight() { return TITLE_H + PAD * 2 + rows() * BUTTON_H + (rows() - 1) * GAP; }
+    private int panelTop() { return (height - panelHeight()) / 2; }
+
     private Entity pet() { return Minecraft.getInstance().level == null ? null : Minecraft.getInstance().level.getEntity(entityId); }
 
     @Override
     protected void init() {
-        boolean sitting = (flags & PetActions.FLAG_SITTING) != 0 && (flags & PetActions.FLAG_SLEEPING) == 0;
-        boolean sleeping = (flags & PetActions.FLAG_SLEEPING) != 0;
-        boolean staying = (flags & PetActions.FLAG_STAYING) != 0;
-        String[] labels = {
-                "gui.minenorthpets.menu.pet",
-                "gui.minenorthpets.menu.play",
-                sleeping ? "gui.minenorthpets.menu.wake" : "gui.minenorthpets.menu.sleep",
-                sitting ? "gui.minenorthpets.menu.stand" : "gui.minenorthpets.menu.sit",
-                staying ? "gui.minenorthpets.menu.follow" : "gui.minenorthpets.menu.stay"};
-        PetActions.Action[] actions = {PetActions.Action.PET, PetActions.Action.PLAY, PetActions.Action.SLEEP, PetActions.Action.SIT, PetActions.Action.STAY};
-        int x = (width - BUTTON_W) / 2;
-        int y = panelTop() + TITLE_H + PAD;
-        for (int i = 0; i < labels.length; i++) {
-            PetActions.Action a = actions[i];
-            addRenderableWidget(new RoundButton(x, y + i * (BUTTON_H + GAP), BUTTON_W, BUTTON_H, Component.translatable(labels[i]), b -> {
-                K9Net.CHANNEL.sendToServer(new K9Net.Action(entityId, a.ordinal()));
+        int left = (width - panelWidth()) / 2 + PAD;
+        int top = panelTop() + TITLE_H + PAD;
+        for (int i = 0; i < entries.size(); i++) {
+            Entry e = entries.get(i);
+            int col = i / rows(), row = i % rows();
+            addRenderableWidget(new RoundButton(left + col * (BUTTON_W + GAP), top + row * (BUTTON_H + GAP), BUTTON_W, BUTTON_H,
+                    Component.translatable(e.labelKey()), b -> {
+                if (e.action() == null) {
+                    Minecraft.getInstance().setScreen(new PetRemarkScreen(entityId));
+                    return;
+                }
+                K9Net.CHANNEL.sendToServer(new K9Net.Action(entityId, e.action().ordinal()));
                 onClose();
             }));
         }
     }
 
-    private int panelHeight() { return TITLE_H + PAD * 2 + 5 * BUTTON_H + 4 * GAP; }
-    private int panelTop() { return (height - panelHeight()) / 2; }
-
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        int w = BUTTON_W + PAD * 2, x = (width - w) / 2, y = panelTop();
+        int w = panelWidth(), x = (width - w) / 2, y = panelTop();
         RoundButton.roundedRect(g, x - 1, y - 1, w + 2, panelHeight() + 2, 14, 0x66FFFFFF);
         RoundButton.roundedRect(g, x, y, w, panelHeight(), 13, 0xE0181B26);
         Entity pet = pet();

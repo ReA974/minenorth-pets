@@ -15,6 +15,16 @@ Ctrl + clic droit sur son animal apprivoisé ouvre un menu (écran client arrond
 - **S'asseoir / Se lever** et **Rester ici / Suivre** (reste sur place sans s'asseoir, jusqu'à « Suivre »).
 Animations GeckoLib d'origine de Polly Pets (`assets/polly_pets/animations`) : seuls le beagle et le teckel ont `sleep`, `sit` et `play` ; le chat (`kitty`) a `attack`, le carlin `idle2`, la tortue `upside` ; tous les autres modèles n'ont que `idle` et `walk`. Comme Polly Pets ne les déclenche jamais (et que ça ne marcherait que pour 2 modèles), toutes les actions passent par des poses calculées, des particules et des sons : elles marchent donc pour toutes les espèces (reptiles et serpent : pas de pose assise/couchée).
 
+## Vétérinaire et carnet de santé
+Chaque animal apprivoisé a un carnet (dans les données persistantes de l'entité : il suit l'animal) : date d'adoption (au moment de l'apprivoisement), puce (numéro de 15 chiffres généré, commençant par 250), vaccins (12 derniers), soins, 8 dernières remarques (48 caractères), état du collier.
+- **Carnet de santé** (bouton du menu Ctrl + clic droit, lecture seule) : le maître, les vétérinaires et la police (`PoliceApi.isPolice`).
+- **Vétérinaire** : opérateur, ou patron / employé de l'entreprise `[veterinaire] entreprise` (nom exact de l'entreprise, vide = personne) via `CompanyService` de l'API MineNorth, appelé par réflexion (le mod fonctionne sans l'API : seuls les opérateurs sont alors vétérinaires). Actions : **Vacciner**, **Soigner** (vie complète + cœurs), **Ajouter une remarque**, **Poser la puce**. Le vétérinaire ouvre le menu sur l'animal de n'importe qui ; le serveur revérifie le droit à chaque action.
+
+## Collier d'identification et animal perdu
+- **Collier d'identification** (5 cuirs + 1 pépite de fer, onglet Animaux & Vêtements) : clic droit sur son animal = enregistre le nom RP du maître (identité de l'API si dispo, sinon pseudo). Le collier est consommé.
+- **Accroupi, main nue, sur l'animal d'un autre** : « Cet animal appartient à <nom> » (signalé perdu le cas échéant).
+- **Signaler perdu / retrouvé** (menu, collier requis) : drapeau lisible sur le collier et dans le carnet, et message à la police en service (`PoliceService.alertPolice` par réflexion ; `[collier] alerterPolice` pour le couper). Pas de fourrière ni de faim.
+
 ## Langues
 Tout est en français. `en_us.json` reprend le même français (le client peut être en anglais) pour ne jamais afficher de clé brute. `assets/polly_pets/lang/fr_fr.json` et `en_us.json` (dans ce mod) traduisent en français les entités, œufs d'apparition, niches, litières, gamelles et paniers de Polly Pets, avec les mêmes clés que le jar d'origine ; ce mod se charge après Polly Pets, donc sa traduction l'emporte.
 

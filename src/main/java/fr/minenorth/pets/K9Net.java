@@ -30,7 +30,7 @@ import java.util.function.Supplier;
 public final class K9Net {
     private K9Net() {}
 
-    private static final String PROTOCOL = "2";
+    private static final String PROTOCOL = "3";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(MineNorthPets.MOD_ID, "k9"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
@@ -75,8 +75,14 @@ public final class K9Net {
         void handle(Supplier<NetworkEvent.Context> ctx) {
             ServerPlayer p = ctx.get().getSender();
             ctx.get().enqueueWork(() -> {
-                TamableAnimal pet = p == null ? null : PetActions.target(p, entityId);
-                if (pet != null) CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), new OpenMenu(entityId, PetActions.flags(pet)));
+                TamableAnimal pet = p == null ? null : PetActions.targetAny(p, entityId);
+                if (pet == null) return;
+                int flags = PetActions.menuFlags(p, pet);
+                if (flags == 0) {
+                    p.displayClientMessage(net.minecraft.network.chat.Component.literal("§7Ce n'est pas votre animal."), true);
+                    return;
+                }
+                CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), new OpenMenu(entityId, flags));
             });
             ctx.get().setPacketHandled(true);
         }
@@ -90,10 +96,37 @@ public final class K9Net {
             ServerPlayer p = ctx.get().getSender();
             ctx.get().enqueueWork(() -> {
                 PetActions.Action[] all = PetActions.Action.values();
-                if (p == null || action < 0 || action >= all.length) return;
-                TamableAnimal pet = PetActions.target(p, entityId);
-                if (pet != null) PetActions.perform(p, pet, all[action]);
+                if (p != null && action >= 0 && action < all.length) PetActions.performChecked(p, entityId, all[action]);
             });
+            ctx.get().setPacketHandled(true);
+        }
+    }
+
+    /** Remarque ajoutée au carnet par un vétérinaire (le serveur revérifie le droit et nettoie le texte). */
+    public record Remark(int entityId, String text) {
+        void encode(FriendlyByteBuf b) { b.writeVarInt(entityId); b.writeUtf(text, 200); }
+        static Remark decode(FriendlyByteBuf b) { return new Remark(b.readVarInt(), b.readUtf(200)); }
+
+        void handle(Supplier<NetworkEvent.Context> ctx) {
+            ServerPlayer p = ctx.get().getSender();
+            ctx.get().enqueueWork(() -> {
+                TamableAnimal pet = p == null ? null : PetActions.targetAny(p, entityId);
+                String clean = PetBook.clean(text);
+                if (pet == null || clean.isEmpty() || !Compat.isVet(p)) return;
+                PetBook.remark(pet, clean);
+                p.displayClientMessage(net.minecraft.network.chat.Component.literal("§aRemarque ajoutée au carnet de santé."), true);
+            });
+            ctx.get().setPacketHandled(true);
+        }
+    }
+
+    /** Contenu du carnet de santé, envoyé au joueur qui le demande. */
+    public record Book(java.util.List<String> lines) {
+        void encode(FriendlyByteBuf b) { b.writeCollection(lines, (buf, line) -> buf.writeUtf(line, 300)); }
+        static Book decode(FriendlyByteBuf b) { return new Book(b.readList(buf -> buf.readUtf(300))); }
+
+        void handle(Supplier<NetworkEvent.Context> ctx) {
+            ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> fr.minenorth.pets.client.PetBookScreen.open(lines)));
             ctx.get().setPacketHandled(true);
         }
     }
@@ -104,6 +137,8 @@ public final class K9Net {
         CHANNEL.registerMessage(2, OpenMenu.class, OpenMenu::encode, OpenMenu::decode, OpenMenu::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(3, OpenRequest.class, OpenRequest::encode, OpenRequest::decode, OpenRequest::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(4, Action.class, Action::encode, Action::decode, Action::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(5, Remark.class, Remark::encode, Remark::decode, Remark::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(6, Book.class, Book::encode, Book::decode, Book::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
     }
 
     /** À appeler après un changement de statut K9. */
