@@ -75,6 +75,7 @@ public final class PetCarnet {
         e.owner = p.getUUID();
         e.ownerPseudo = p.getGameProfile().getName();
         e.serial++;
+        e.lastIssue = p.server.overworld().getGameTime();
         e.abandoned = false;
         e.lost = PetBook.isLost(pet);
         refresh(e, pet);
@@ -121,6 +122,27 @@ public final class PetCarnet {
         }
     }
 
+    /**
+     * « Récupérer le carnet » (menu) : le maître a perdu son carnet, il en obtient un nouveau gratuitement, après un délai de sécurité, et l'ancien est
+     * invalidé côté serveur (numéro de carnet incrémenté, exemplaires de l'inventaire retirés). Maître vérifié par UUID, animal chargé et à portée (déjà
+     * contrôlés par l'appelant).
+     */
+    public static void recover(ServerPlayer p, TamableAnimal pet) {
+        if (!PetsConfig.carnetEnabled()) { bar(p, "§7Les carnets de santé sont désactivés."); return; }
+        if (!pet.isOwnedBy(p)) return;
+        if (!PetBook.hasCollar(pet)) { bar(p, "§7Posez d'abord un collier d'identification : le carnet est remis à ce moment-là."); return; }
+        LostPets.Entry e = LostPets.get(p.server).entry(pet.getUUID());
+        if (e != null && p.getUUID().equals(e.owner) && e.lastIssue > 0) {
+            long left = e.lastIssue + PetsConfig.carnetRecoverySeconds() * 20L - p.server.overworld().getGameTime();
+            if (left > 0) {
+                bar(p, "§7Patientez encore " + ((left + 19) / 20) + " s avant de récupérer un nouveau carnet.");
+                return;
+            }
+        }
+        issue(p, pet);
+        bar(p, "§aNouveau carnet de santé remis. L'ancien n'est plus valide.");
+    }
+
     // ------------------------------------------------------------------ ouverture
 
     /** Le registre dit que ce carnet est valable pour ce joueur (même numéro, même maître, animal pas abandonné) ? Sinon null + message. */
@@ -128,12 +150,12 @@ public final class PetCarnet {
     private static LostPets.Entry valid(ServerPlayer p, ItemStack st, UUID petId) {
         LostPets.Entry e = LostPets.get(p.server).entry(petId);
         if (e == null || e.abandoned || !p.getUUID().equals(e.owner) || !st.hasTag() || st.getTag().getInt(SERIAL) != e.serial) {
-            bar(p, "§cCe carnet n'est plus valable.");
+            bar(p, "§cCe carnet n'est plus valide.");
             return null;
         }
         TamableAnimal pet = findLoaded(p.server, petId);
         if (pet != null && !pet.isOwnedBy(p)) {
-            bar(p, "§cCe carnet n'est plus valable.");
+            bar(p, "§cCe carnet n'est plus valide.");
             return null;
         }
         return e;

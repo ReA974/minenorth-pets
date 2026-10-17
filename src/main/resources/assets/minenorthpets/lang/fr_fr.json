@@ -44,5 +44,8 @@
   "gui.minenorthpets.book.lost": "Signaler perdu",
   "gui.minenorthpets.book.found": "Signaler retrouvé",
   "gui.minenorthpets.book.abandon": "Abandonner l'animal",
-  "gui.minenorthpets.book.confirm": "§c§lConfirmer (5 s)"
+  "gui.minenorthpets.book.confirm": "§c§lConfirmer (5 s)",
+  "gui.minenorthpets.menu.board": "Monter en voiture",
+  "gui.minenorthpets.menu.alight": "Descendre",
+  "gui.minenorthpets.menu.recover": "Récupérer le carnet"
 }

@@ -26,10 +26,10 @@ public final class PetActions {
     private static final int COOLDOWN_TICKS = 100;
     private static final double REACH = 8.0;
 
-    public static final int FLAG_SITTING = 1, FLAG_SLEEPING = 2, FLAG_STAYING = 4, FLAG_OWNER = 8, FLAG_VET = 16, FLAG_COLLAR = 32, FLAG_LOST = 64, FLAG_CHALLENGED = 128, FLAG_FIGHTING = 256, FLAG_UNCONSCIOUS = 512, FLAG_CARRIED = 1024, FLAG_PARROT = 2048;
+    public static final int FLAG_SITTING = 1, FLAG_SLEEPING = 2, FLAG_STAYING = 4, FLAG_OWNER = 8, FLAG_VET = 16, FLAG_COLLAR = 32, FLAG_LOST = 64, FLAG_CHALLENGED = 128, FLAG_FIGHTING = 256, FLAG_UNCONSCIOUS = 512, FLAG_CARRIED = 1024, FLAG_PARROT = 2048, FLAG_MTS = 4096, FLAG_MOUNTED = 8192;
 
     /** Les 5 premières sont réservées au maître, BOOK au maître / vétérinaire / police, les 3 dernières au vétérinaire, LOST au maître. */
-    public enum Action { PET, PLAY, SLEEP, SIT, STAY, BOOK, VACCINE, HEAL, CHIP, LOST, CHALLENGE, ACCEPT, SEPARATE, CARRY, DROP, REVIVE, TALK }
+    public enum Action { PET, PLAY, SLEEP, SIT, STAY, BOOK, VACCINE, HEAL, CHIP, LOST, CHALLENGE, ACCEPT, SEPARATE, CARRY, DROP, REVIVE, TALK, BOARD, ALIGHT, RECOVER }
 
     public static boolean isSleeping(Entity e) { return e.getPersistentData().getBoolean(SLEEP_TAG); }
     public static boolean isStaying(Entity e) { return e.getPersistentData().getBoolean(STAY_TAG); }
@@ -38,6 +38,7 @@ public final class PetActions {
         return (pet.isOrderedToSit() ? FLAG_SITTING : 0) | (isSleeping(pet) ? FLAG_SLEEPING : 0) | (isStaying(pet) ? FLAG_STAYING : 0)
                 | (PetBook.hasCollar(pet) ? FLAG_COLLAR : 0) | (PetBook.isLost(pet) ? FLAG_LOST : 0)
                 | (PetFight.isFighting(pet) ? FLAG_FIGHTING : 0) | (PetKo.isUnconscious(pet) ? FLAG_UNCONSCIOUS : 0) | (PetCarry.isCarried(pet) ? FLAG_CARRIED : 0) | (PetEvents.isParrot(pet) ? FLAG_PARROT : 0)
+                | (MtsRide.loaded() ? FLAG_MTS : 0) | (MtsRide.loaded() && MtsRide.seatOf(pet) != null ? FLAG_MOUNTED : 0)
                 | (pet.level().getServer() != null && PetFight.isChallenged(pet, pet.level().getServer()) ? FLAG_CHALLENGED : 0);
     }
 
@@ -62,7 +63,7 @@ public final class PetActions {
         boolean owner = pet.isOwnedBy(p);
         // Le perroquet n'a ni jeu, ni sommeil couché, ni « rester ici », ni combat, ni portage ; « Faire parler » n'existe que pour lui.
         boolean parrot = PetEvents.isParrot(pet);
-        if (parrot && switch (action) { case PLAY, SLEEP, STAY, CHALLENGE, ACCEPT, SEPARATE, CARRY, DROP -> true; default -> false; }) return;
+        if (parrot && switch (action) { case PLAY, SLEEP, STAY, CHALLENGE, ACCEPT, SEPARATE, CARRY, DROP, BOARD, ALIGHT -> true; default -> false; }) return;
         if (!parrot && action == Action.TALK) return;
         switch (action) {
             case PET, PLAY, SLEEP, SIT, STAY, LOST, CHALLENGE, ACCEPT, SEPARATE, TALK -> {
@@ -74,6 +75,9 @@ public final class PetActions {
             }
             case CARRY -> {
                 if (owner) PetCarry.carry(p, pet);
+            }
+            case BOARD, ALIGHT, RECOVER -> {
+                if (owner) perform(p, pet, action);
             }
             case DROP -> {
                 if (PetCarry.carriedBy(p) == pet) PetCarry.drop(p, "§7Vous posez votre animal.");
@@ -142,6 +146,9 @@ public final class PetActions {
             }
             case SIT -> PetEvents.toggleSit(p, pet);
             case BOOK, CARRY, DROP, REVIVE -> { }
+            case BOARD -> board(p, pet);
+            case ALIGHT -> alight(p, pet);
+            case RECOVER -> PetCarnet.recover(p, pet);
             case TALK -> talk(p, pet);
             case VACCINE -> {
                 PetBook.vaccinate(pet);
@@ -188,6 +195,30 @@ public final class PetActions {
         boolean lost = !PetCarnet.isLost(pet);
         PetCarnet.setLost(p, pet.getUUID(), pet, lost);
         msg(p, lost ? "§cAnimal signalé perdu. La police est prévenue." : "§aAnimal signalé retrouvé.");
+    }
+
+    /** « Monter en voiture » : véhicule MTS du maître, sinon le plus proche (6 blocs) ; place passager libre, jamais le poste de conduite. */
+    private static void board(ServerPlayer p, TamableAnimal pet) {
+        if (!PetsConfig.vehicleMenuEnabled()) { msg(p, "§7Cette action est désactivée."); return; }
+        if (!MtsRide.loaded()) { msg(p, "§7Aucun véhicule compatible n'est installé."); return; }
+        if (PetKo.isUnconscious(pet) || isSleeping(pet) || pet.isOrderedToSit()) { msg(p, "§7Faites d'abord lever votre animal."); return; }
+        if (PetFight.isFighting(pet)) { msg(p, "§7Impossible : votre animal est en plein combat."); return; }
+        if (PetCarry.isCarried(pet)) { msg(p, "§7Posez d'abord votre animal."); return; }
+        if (pet.isPassenger()) { msg(p, "§7Votre animal est déjà dans un véhicule."); return; }
+        double max = PetsConfig.k9BoardDistance();
+        if (pet.distanceToSqr(p) > max * max) { msg(p, "§7Votre animal est trop loin du véhicule."); return; }
+        Object seat = MtsRide.seatOf(p);
+        Object vehicle = seat != null ? MtsRide.vehicleOf(seat) : MtsRide.nearestVehicle(p, 6.0);
+        if (vehicle == null) { msg(p, "§7Aucun véhicule à proximité (6 blocs) : montez dedans ou approchez-vous."); return; }
+        if (!MtsRide.board(pet, vehicle)) { msg(p, "§7Aucune place libre dans ce véhicule."); return; }
+        msg(p, "§aVotre animal monte dans le véhicule.");
+    }
+
+    private static void alight(ServerPlayer p, TamableAnimal pet) {
+        Object seat = MtsRide.loaded() ? MtsRide.seatOf(pet) : null;
+        if (seat == null) { msg(p, "§7Votre animal n'est pas dans un véhicule."); return; }
+        MtsRide.eject(seat);
+        msg(p, "§7Votre animal descend du véhicule.");
     }
 
     /** « Faire parler » (perroquet) : son d'ambiance et notes de musique, pause de 3 s. */

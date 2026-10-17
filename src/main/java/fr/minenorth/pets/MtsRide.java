@@ -47,6 +47,37 @@ public final class MtsRide {
 
     private static boolean isPartSeat(@Nullable Object o) { return o != null && o.getClass().getSimpleName().equals("PartSeat"); }
 
+    private static boolean isBuilderExisting(@Nullable Entity e) {
+        if (e == null) return false;
+        ResourceLocation k = ForgeRegistries.ENTITY_TYPES.getKey(e.getType());
+        return k != null && "mts".equals(k.getNamespace()) && "builder_existing".equals(k.getPath());
+    }
+
+    private static boolean isVehicleObject(@Nullable Object o) {
+        for (Class<?> c = o == null ? null : o.getClass(); c != null; c = c.getSuperclass()) {
+            if (c.getSimpleName().equals("EntityVehicleF_Physics")) return true;
+        }
+        return false;
+    }
+
+    /** Le véhicule MTS le plus proche de cette entité dans ce rayon (blocs), sinon null. */
+    @Nullable
+    public static Object nearestVehicle(Entity around, double range) {
+        Object best = null;
+        double bestDist = Double.MAX_VALUE;
+        for (Entity e : around.level().getEntities(around, around.getBoundingBox().inflate(range))) {
+            if (!isBuilderExisting(e)) continue;
+            Object inner = field(e, "entity");
+            if (!isVehicleObject(inner)) continue;
+            double d = e.distanceToSqr(around);
+            if (d <= range * range && d < bestDist) {
+                bestDist = d;
+                best = inner;
+            }
+        }
+        return best;
+    }
+
     /** Siège MTS dans lequel cette entité est assise, sinon null. */
     @Nullable
     public static Object seatOf(@Nullable Entity rider) {

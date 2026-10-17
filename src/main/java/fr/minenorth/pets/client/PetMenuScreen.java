@@ -70,7 +70,12 @@ public class PetMenuScreen extends Screen {
             else if (has(PetActions.FLAG_CHALLENGED)) entries.add(new Entry("gui.minenorthpets.menu.accept", PetActions.Action.ACCEPT));
             else entries.add(new Entry("gui.minenorthpets.menu.challenge", PetActions.Action.CHALLENGE));
             entries.add(carryEntry());
+            if (has(PetActions.FLAG_MTS)) {
+                entries.add(has(PetActions.FLAG_MOUNTED) ? new Entry("gui.minenorthpets.menu.alight", PetActions.Action.ALIGHT)
+                        : new Entry("gui.minenorthpets.menu.board", PetActions.Action.BOARD));
+            }
         }
+        if (has(PetActions.FLAG_OWNER)) entries.add(new Entry("gui.minenorthpets.menu.recover", PetActions.Action.RECOVER));
         entries.add(new Entry("gui.minenorthpets.menu.book", PetActions.Action.BOOK));
         if (has(PetActions.FLAG_VET)) {
             entries.add(new Entry("gui.minenorthpets.menu.vaccine", PetActions.Action.VACCINE));

@@ -24,6 +24,7 @@ public final class LostPets extends SavedData {
         public String ownerPseudo = "";
         public int serial;
         public boolean lost, abandoned;
+        public long lastIssue;
         public String note = "", species = "", name = "", chip = "", pos = "";
     }
 
@@ -60,6 +61,7 @@ public final class LostPets extends SavedData {
             c.putUUID("owner", e.owner);
             c.putString("ownerPseudo", e.ownerPseudo);
             c.putInt("serial", e.serial);
+            c.putLong("lastIssue", e.lastIssue);
             c.putBoolean("lost", e.lost);
             c.putBoolean("abandoned", e.abandoned);
             c.putString("note", e.note);
@@ -83,6 +85,7 @@ public final class LostPets extends SavedData {
             e.owner = c.getUUID("owner");
             e.ownerPseudo = c.getString("ownerPseudo");
             e.serial = c.getInt("serial");
+            e.lastIssue = c.getLong("lastIssue");
             e.lost = c.getBoolean("lost");
             e.abandoned = c.getBoolean("abandoned");
             e.note = c.getString("note");

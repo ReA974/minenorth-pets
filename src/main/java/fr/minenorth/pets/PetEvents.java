@@ -91,17 +91,30 @@ public final class PetEvents {
                 (float) PetsConfig.followStop(), false));
     }
 
-    /** Le K9 monte dans le véhicule MTS de son maître (place passager libre) et en descend avec lui. */
+    /** Animaux dont le maître était dans le même véhicule MTS : ils en descendent avec lui (un animal monté par le menu depuis l'extérieur n'est pas éjecté). */
+    private static final java.util.Set<java.util.UUID> OWNER_WAS_IN = new java.util.HashSet<>();
+
+    /**
+     * Véhicules MTS. Un animal de Polly Pets monté (menu ou K9) descend si on le met assis, ou si son maître descend du véhicule après y avoir été avec lui.
+     * Seul le K9 monte tout seul dans le véhicule de son maître (place passager libre).
+     */
     @SubscribeEvent
     public static void onTick(LivingEvent.LivingTickEvent ev) {
         if (!(ev.getEntity() instanceof TamableAnimal pet) || pet.level().isClientSide() || pet.tickCount % 10 != 0) return;
-        if (!PetsConfig.k9RidesVehicles() || !isK9(pet) || !isPollyPet(pet) || !pet.isTame() || !MtsRide.loaded()) return;
+        if (!isPollyPet(pet) || !pet.isTame() || !MtsRide.loaded()) return;
         Object ownerSeat = MtsRide.seatOf(pet.getOwner());
         Object petSeat = MtsRide.seatOf(pet);
         if (petSeat != null) {
-            if (ownerSeat == null || pet.isOrderedToSit() || MtsRide.vehicleOf(ownerSeat) != MtsRide.vehicleOf(petSeat)) MtsRide.eject(petSeat);
+            boolean together = ownerSeat != null && MtsRide.vehicleOf(ownerSeat) == MtsRide.vehicleOf(petSeat);
+            if (together) OWNER_WAS_IN.add(pet.getUUID());
+            if (pet.isOrderedToSit() || (!together && OWNER_WAS_IN.contains(pet.getUUID()))) {
+                MtsRide.eject(petSeat);
+                OWNER_WAS_IN.remove(pet.getUUID());
+            }
             return;
         }
+        OWNER_WAS_IN.remove(pet.getUUID());
+        if (!PetsConfig.k9RidesVehicles() || !isK9(pet)) return;
         if (ownerSeat == null || pet.isOrderedToSit() || pet.isPassenger() || PetCarry.isCarried(pet)) return;
         double d = PetsConfig.k9BoardDistance();
         if (pet.distanceToSqr(pet.getOwner()) > d * d) return;
