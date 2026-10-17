@@ -49,6 +49,7 @@ public final class ModItems {
             if (path.contains("puppy") || path.contains("pupy") || path.contains("baby") || path.contains("kitten")) continue;
             out.add(k);
         }
+        out.add(AdoptionItem.GABON);
         return List.copyOf(out);
     }
 

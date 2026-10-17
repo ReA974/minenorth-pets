@@ -25,6 +25,8 @@ import java.util.List;
  */
 public class AdoptionItem extends Item {
     public static final String TAG = "pet";
+    /** Espèce virtuelle : un perroquet vanilla de variante grise. */
+    public static final ResourceLocation GABON = new ResourceLocation(MineNorthPets.MOD_ID, "gris_du_gabon");
 
     public AdoptionItem() { super(new Item.Properties().stacksTo(1)); }
 
@@ -35,16 +37,26 @@ public class AdoptionItem extends Item {
     }
 
     @Nullable
-    private static EntityType<?> species(ItemStack st) {
+    private static ResourceLocation speciesId(ItemStack st) {
         if (!st.hasTag() || !st.getTag().contains(TAG)) return null;
-        ResourceLocation id = ResourceLocation.tryParse(st.getTag().getString(TAG));
-        return id != null && ForgeRegistries.ENTITY_TYPES.containsKey(id) ? ForgeRegistries.ENTITY_TYPES.getValue(id) : null;
+        return ResourceLocation.tryParse(st.getTag().getString(TAG));
+    }
+
+    /** Type d'entité à faire apparaître : le Gris du Gabon est un perroquet (variante grise appliquée à l'apparition). */
+    @Nullable
+    private static EntityType<?> species(ItemStack st) {
+        ResourceLocation id = speciesId(st);
+        if (id == null) return null;
+        if (id.equals(GABON)) return EntityType.PARROT;
+        return ForgeRegistries.ENTITY_TYPES.containsKey(id) ? ForgeRegistries.ENTITY_TYPES.getValue(id) : null;
     }
 
     @Override
     public Component getName(ItemStack st) {
-        EntityType<?> t = species(st);
         Component base = Component.translatable(getDescriptionId());
+        ResourceLocation id = speciesId(st);
+        if (id != null && id.equals(GABON)) return Component.empty().append(base).append(" : ").append(Component.translatable("species.minenorthpets.gris_du_gabon"));
+        EntityType<?> t = species(st);
         return t == null ? base : Component.empty().append(base).append(" : ").append(t.getDescription());
     }
 
@@ -63,6 +75,7 @@ public class AdoptionItem extends Item {
         BlockPos pos = ctx.getClickedPos().relative(ctx.getClickedFace());
         var e = type.spawn(sl, ItemStack.EMPTY, p, pos, MobSpawnType.SPAWN_EGG, true, false);
         if (e == null) return InteractionResult.FAIL;
+        if (e instanceof net.minecraft.world.entity.animal.Parrot parrot && GABON.equals(speciesId(st))) parrot.setVariant(net.minecraft.world.entity.animal.Parrot.Variant.GRAY);
         if (e instanceof TamableAnimal pet) {
             pet.tame(p);
             PetBook.ensure(pet);

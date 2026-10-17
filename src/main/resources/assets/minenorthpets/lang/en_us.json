@@ -37,5 +37,7 @@
   "gui.minenorthpets.menu.separate": "Séparer",
   "gui.minenorthpets.menu.carry": "Porter",
   "gui.minenorthpets.menu.drop": "Poser",
-  "gui.minenorthpets.menu.revive": "Réanimer"
+  "gui.minenorthpets.menu.revive": "Réanimer",
+  "gui.minenorthpets.menu.talk": "Faire parler",
+  "species.minenorthpets.gris_du_gabon": "Gris du Gabon"
 }

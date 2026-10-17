@@ -112,7 +112,7 @@ public final class PetBook {
         List<String> out = new ArrayList<>();
         out.add("§e§lCarnet de santé");
         out.add("§7Nom : §f" + (pet.hasCustomName() ? pet.getCustomName().getString() : "—"));
-        out.add("§7Espèce : §f" + pet.getType().getDescription().getString());
+        out.add("§7Espèce : §f" + PetEvents.speciesName(pet));
         String fallback = pet.getOwner() != null ? pet.getOwner().getName().getString() : "Inconnu";
         out.add("§7Maître : §f" + Compat.displayName(server, pet.getOwnerUUID(), hasCollar(pet) ? collarOwner(pet) : fallback));
         out.add("§7Adoption : §f" + b.getString("adopt"));

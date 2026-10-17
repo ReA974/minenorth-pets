@@ -36,7 +36,7 @@ public final class PetKo {
         return (int) Math.max(0, (left + 1199) / 1200);
     }
 
-    private static String name(TamableAnimal pet) { return pet.getType().getDescription().getString(); }
+    private static String name(TamableAnimal pet) { return PetEvents.speciesName(pet); }
 
     private static ServerPlayer owner(TamableAnimal pet) {
         return pet.getOwnerUUID() == null || pet.level().getServer() == null ? null : pet.level().getServer().getPlayerList().getPlayer(pet.getOwnerUUID());
@@ -93,7 +93,7 @@ public final class PetKo {
     /** Annule la mort d'un animal apprivoisé ; /kill, le vide (sources qui contournent l'invulnérabilité) et le délai expiré tuent vraiment. */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onDeath(LivingDeathEvent ev) {
-        if (!(ev.getEntity() instanceof TamableAnimal pet) || pet.level().isClientSide() || !PetEvents.isPollyPet(pet)) return;
+        if (!(ev.getEntity() instanceof TamableAnimal pet) || pet.level().isClientSide() || !PetEvents.isPet(pet)) return;
         if (!PetsConfig.koEnabled() || !pet.isTame() || pet.getOwnerUUID() == null) return;
         if (ev.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) return;
         ev.setCanceled(true);

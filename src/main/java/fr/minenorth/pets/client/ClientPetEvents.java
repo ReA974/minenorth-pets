@@ -31,7 +31,7 @@ public final class ClientPetEvents {
             if (!ev.isUseItem() || !Screen.hasControlDown()) return;
             Minecraft mc = Minecraft.getInstance();
             if (mc.player == null || mc.screen != null) return;
-            if (mc.hitResult instanceof EntityHitResult hit && hit.getEntity() instanceof TamableAnimal pet && PetEvents.isPollyPet(pet) && pet.isTame()) {
+            if (mc.hitResult instanceof EntityHitResult hit && hit.getEntity() instanceof TamableAnimal pet && PetEvents.isPet(pet) && pet.isTame()) {
                 ev.setCanceled(true);
                 ev.setSwingHand(false);
                 K9Net.CHANNEL.sendToServer(new K9Net.OpenRequest(pet.getId()));

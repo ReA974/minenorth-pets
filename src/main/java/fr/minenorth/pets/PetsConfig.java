@@ -19,7 +19,7 @@ public final class PetsConfig {
     private static final ForgeConfigSpec.BooleanValue LOST_ALERT, COMBAT_ENABLED;
     private static final ForgeConfigSpec.IntValue COMBAT_SECONDS, COMBAT_KO_PERCENT, COMBAT_RANGE, COMBAT_ANSWER;
     private static final ForgeConfigSpec.DoubleValue COMBAT_DAMAGE;
-    private static final ForgeConfigSpec.BooleanValue CARRY_ENABLED, KO_ENABLED;
+    private static final ForgeConfigSpec.BooleanValue CARRY_ENABLED, KO_ENABLED, PARROT_ENABLED;
     private static final ForgeConfigSpec.IntValue CARRY_SLOWNESS, KO_MINUTES;
 
     private static final List<String> DEFAULT_ITEMS = List.of(
@@ -62,6 +62,9 @@ public final class PetsConfig {
         COMBAT_RANGE = b.comment("Portée du défi (blocs) : l'adversaire est l'animal apprivoisé le plus proche dans ce rayon").defineInRange("porteeDefi", 8, 2, 32);
         COMBAT_ANSWER = b.comment("Temps laissé au maître défié pour accepter (secondes)").defineInRange("delaiReponseSecondes", 30, 5, 300);
         b.pop();
+        b.comment("Perroquet vanilla (dont le Gris du Gabon)").push("perroquet");
+        PARROT_ENABLED = b.comment("Le perroquet apprivoisé est un animal de compagnie : menu, carnet de santé, collier, inconscient à la place de la mort, « Faire parler »").define("actif", true);
+        b.pop();
         b.comment("Porter son animal").push("portage");
         CARRY_ENABLED = b.comment("Autorise « Porter » / « Poser » dans le menu de l'animal").define("actif", true);
         CARRY_SLOWNESS = b.comment("Niveau de Lenteur du porteur (0 = aucune, 1 = Lenteur I, 2 = Lenteur II…)").defineInRange("lenteur", 1, 0, 4);
@@ -93,6 +96,7 @@ public final class PetsConfig {
     public static int k9BoardDistance() { return val(K9_BOARD::get, 10); }
     public static String vetCompany() { return val(() -> VET_COMPANY.get(), ""); }
     public static boolean lostAlertsPolice() { return val(LOST_ALERT::get, true); }
+    public static boolean parrotEnabled() { return val(PARROT_ENABLED::get, true); }
     public static boolean carryEnabled() { return val(CARRY_ENABLED::get, true); }
     public static int carrySlowness() { return val(CARRY_SLOWNESS::get, 1); }
     public static boolean koEnabled() { return val(KO_ENABLED::get, true); }

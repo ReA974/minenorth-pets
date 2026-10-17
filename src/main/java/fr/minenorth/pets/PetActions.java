@@ -26,10 +26,10 @@ public final class PetActions {
     private static final int COOLDOWN_TICKS = 100;
     private static final double REACH = 8.0;
 
-    public static final int FLAG_SITTING = 1, FLAG_SLEEPING = 2, FLAG_STAYING = 4, FLAG_OWNER = 8, FLAG_VET = 16, FLAG_COLLAR = 32, FLAG_LOST = 64, FLAG_CHALLENGED = 128, FLAG_FIGHTING = 256, FLAG_UNCONSCIOUS = 512, FLAG_CARRIED = 1024;
+    public static final int FLAG_SITTING = 1, FLAG_SLEEPING = 2, FLAG_STAYING = 4, FLAG_OWNER = 8, FLAG_VET = 16, FLAG_COLLAR = 32, FLAG_LOST = 64, FLAG_CHALLENGED = 128, FLAG_FIGHTING = 256, FLAG_UNCONSCIOUS = 512, FLAG_CARRIED = 1024, FLAG_PARROT = 2048;
 
     /** Les 5 premières sont réservées au maître, BOOK au maître / vétérinaire / police, les 3 dernières au vétérinaire, LOST au maître. */
-    public enum Action { PET, PLAY, SLEEP, SIT, STAY, BOOK, VACCINE, HEAL, CHIP, LOST, CHALLENGE, ACCEPT, SEPARATE, CARRY, DROP, REVIVE }
+    public enum Action { PET, PLAY, SLEEP, SIT, STAY, BOOK, VACCINE, HEAL, CHIP, LOST, CHALLENGE, ACCEPT, SEPARATE, CARRY, DROP, REVIVE, TALK }
 
     public static boolean isSleeping(Entity e) { return e.getPersistentData().getBoolean(SLEEP_TAG); }
     public static boolean isStaying(Entity e) { return e.getPersistentData().getBoolean(STAY_TAG); }
@@ -37,7 +37,7 @@ public final class PetActions {
     public static int flags(TamableAnimal pet) {
         return (pet.isOrderedToSit() ? FLAG_SITTING : 0) | (isSleeping(pet) ? FLAG_SLEEPING : 0) | (isStaying(pet) ? FLAG_STAYING : 0)
                 | (PetBook.hasCollar(pet) ? FLAG_COLLAR : 0) | (PetBook.isLost(pet) ? FLAG_LOST : 0)
-                | (PetFight.isFighting(pet) ? FLAG_FIGHTING : 0) | (PetKo.isUnconscious(pet) ? FLAG_UNCONSCIOUS : 0) | (PetCarry.isCarried(pet) ? FLAG_CARRIED : 0)
+                | (PetFight.isFighting(pet) ? FLAG_FIGHTING : 0) | (PetKo.isUnconscious(pet) ? FLAG_UNCONSCIOUS : 0) | (PetCarry.isCarried(pet) ? FLAG_CARRIED : 0) | (PetEvents.isParrot(pet) ? FLAG_PARROT : 0)
                 | (pet.level().getServer() != null && PetFight.isChallenged(pet, pet.level().getServer()) ? FLAG_CHALLENGED : 0);
     }
 
@@ -51,7 +51,7 @@ public final class PetActions {
     /** N'importe quel animal apprivoisé de Polly Pets à portée (les droits sont vérifiés action par action). */
     public static TamableAnimal targetAny(ServerPlayer p, int entityId) {
         Entity e = p.level().getEntity(entityId);
-        if (!(e instanceof TamableAnimal pet) || !PetEvents.isPollyPet(pet) || !pet.isTame()) return null;
+        if (!(e instanceof TamableAnimal pet) || !PetEvents.isPet(pet) || !pet.isTame()) return null;
         return p.distanceToSqr(pet) <= REACH * REACH ? pet : null;
     }
 
@@ -60,8 +60,12 @@ public final class PetActions {
         TamableAnimal pet = targetAny(p, entityId);
         if (pet == null) return;
         boolean owner = pet.isOwnedBy(p);
+        // Le perroquet n'a ni jeu, ni sommeil couché, ni « rester ici », ni combat, ni portage ; « Faire parler » n'existe que pour lui.
+        boolean parrot = PetEvents.isParrot(pet);
+        if (parrot && switch (action) { case PLAY, SLEEP, STAY, CHALLENGE, ACCEPT, SEPARATE, CARRY, DROP -> true; default -> false; }) return;
+        if (!parrot && action == Action.TALK) return;
         switch (action) {
-            case PET, PLAY, SLEEP, SIT, STAY, LOST, CHALLENGE, ACCEPT, SEPARATE -> {
+            case PET, PLAY, SLEEP, SIT, STAY, LOST, CHALLENGE, ACCEPT, SEPARATE, TALK -> {
                 if (owner && PetKo.isUnconscious(pet)) {
                     p.displayClientMessage(Component.literal("§cIl est inconscient : portez-le chez le vétérinaire."), true);
                 } else if (owner) {
@@ -92,7 +96,7 @@ public final class PetActions {
     /** L'animal visé si le joueur en est le maître et qu'il est à portée, sinon null. */
     public static TamableAnimal target(ServerPlayer p, int entityId) {
         Entity e = p.level().getEntity(entityId);
-        if (!(e instanceof TamableAnimal pet) || !PetEvents.isPollyPet(pet) || !pet.isTame() || !pet.isOwnedBy(p)) return null;
+        if (!(e instanceof TamableAnimal pet) || !PetEvents.isPet(pet) || !pet.isTame() || !pet.isOwnedBy(p)) return null;
         return p.distanceToSqr(pet) <= REACH * REACH ? pet : null;
     }
 
@@ -138,6 +142,7 @@ public final class PetActions {
             }
             case SIT -> PetEvents.toggleSit(p, pet);
             case BOOK, CARRY, DROP, REVIVE -> { }
+            case TALK -> talk(p, pet);
             case VACCINE -> {
                 PetBook.vaccinate(pet);
                 heartsAndSound(pet, 3);
@@ -184,7 +189,7 @@ public final class PetActions {
         PetBook.setLost(pet, lost);
         String chip = PetBook.ensure(pet).getString("chip");
         String owner = Compat.displayName(p.server, p.getUUID(), p.getGameProfile().getName());
-        String what = pet.getType().getDescription().getString() + (pet.hasCustomName() ? " « " + pet.getCustomName().getString() + " »" : "");
+        String what = PetEvents.speciesName(pet) + (pet.hasCustomName() ? " « " + pet.getCustomName().getString() + " »" : "");
         if (PetsConfig.lostAlertsPolice()) {
             Compat.alertPolice(p.server, lost
                     ? "§e[Animaux] §cAnimal perdu §f: " + what + " §7(maître : " + owner + (chip.isEmpty() ? "" : ", puce " + chip) + ") §7— vu en "
@@ -192,6 +197,20 @@ public final class PetActions {
                     : "§e[Animaux] §aAnimal retrouvé §f: " + what + " §7(maître : " + owner + ")");
         }
         msg(p, lost ? "§cAnimal signalé perdu. La police est prévenue." : "§aAnimal signalé retrouvé.");
+    }
+
+    /** « Faire parler » (perroquet) : son d'ambiance et notes de musique, pause de 3 s. */
+    private static void talk(ServerPlayer p, TamableAnimal pet) {
+        long now = pet.level().getGameTime();
+        if (pet.getPersistentData().getLong("minenorthpets_talk") > now) {
+            msg(p, "message.minenorthpets.rest");
+            return;
+        }
+        pet.getPersistentData().putLong("minenorthpets_talk", now + 60);
+        sound(pet, SoundEvents.PARROT_AMBIENT, 1.0f);
+        if (pet.level() instanceof ServerLevel sl) {
+            sl.sendParticles(ParticleTypes.NOTE, pet.getX(), pet.getY() + pet.getBbHeight() + 0.3, pet.getZ(), 4, 0.3, 0.2, 0.3, 1.0);
+        }
     }
 
     private static boolean cooldownReady(ServerPlayer p, TamableAnimal pet) {

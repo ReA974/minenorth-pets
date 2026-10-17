@@ -1,6 +1,7 @@
 package fr.minenorth.pets.client;
 
 import fr.minenorth.pets.K9Net;
+import fr.minenorth.pets.PetEvents;
 import fr.minenorth.pets.PetActions;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -42,7 +43,17 @@ public class PetMenuScreen extends Screen {
 
     private void build() {
         boolean unconscious = has(PetActions.FLAG_UNCONSCIOUS);
-        if (has(PetActions.FLAG_OWNER) && unconscious) {
+        if (has(PetActions.FLAG_OWNER) && has(PetActions.FLAG_PARROT)) {
+            // Perroquet : caresser, assis / debout, parler, signalement ; pas de jeu, sommeil, combat ni portage.
+            if (!unconscious) {
+                entries.add(new Entry("gui.minenorthpets.menu.pet", PetActions.Action.PET));
+                entries.add(new Entry(has(PetActions.FLAG_SITTING) ? "gui.minenorthpets.menu.stand" : "gui.minenorthpets.menu.sit", PetActions.Action.SIT));
+                entries.add(new Entry("gui.minenorthpets.menu.talk", PetActions.Action.TALK));
+                if (has(PetActions.FLAG_COLLAR)) {
+                    entries.add(new Entry(has(PetActions.FLAG_LOST) ? "gui.minenorthpets.menu.found" : "gui.minenorthpets.menu.lost", PetActions.Action.LOST));
+                }
+            }
+        } else if (has(PetActions.FLAG_OWNER) && unconscious) {
             // Inconscient : le maître ne peut que le porter (ou le poser) jusqu'au vétérinaire.
             entries.add(carryEntry());
         } else if (has(PetActions.FLAG_OWNER)) {
@@ -110,7 +121,7 @@ public class PetMenuScreen extends Screen {
         RoundButton.roundedRect(g, x - 1, y - 1, w + 2, panelHeight() + 2, 14, 0x66FFFFFF);
         RoundButton.roundedRect(g, x, y, w, panelHeight(), 13, 0xE0181B26);
         Entity pet = pet();
-        Component name = pet != null && pet.hasCustomName() ? pet.getCustomName() : pet != null ? pet.getType().getDescription() : title;
+        Component name = pet != null && pet.hasCustomName() ? pet.getCustomName() : pet != null ? Component.literal(PetEvents.speciesName(pet)) : title;
         g.drawCenteredString(font, name, width / 2, y + PAD - 2, 0xFFFFFFFF);
         super.render(g, mouseX, mouseY, partialTick);
     }

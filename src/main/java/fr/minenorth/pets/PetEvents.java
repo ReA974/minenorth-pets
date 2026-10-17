@@ -31,12 +31,27 @@ public final class PetEvents {
     private static final String K9_NAMED = "minenorthpets_k9name";
     /** Morceaux de nom d'entité Polly Pets qui ne sont pas des chiens : pas de K9. */
     private static final List<String> NOT_DOGS = List.of("hamster", "kitty", "kitten", "calico", "bombay", "british", "khao", "ferret",
-            "snake", "chameleon", "gecko", "tortoise", "egg");
+            "snake", "chameleon", "gecko", "tortoise", "egg", "parrot");
 
+    /** Animal de Polly Pets apprivoisable (chien, chat, hamster…) : tout le jeu de fonctions (suivi, K9, combats, portage). */
     public static boolean isPollyPet(Entity e) {
         if (!(e instanceof TamableAnimal)) return false;
         ResourceLocation k = ForgeRegistries.ENTITY_TYPES.getKey(e.getType());
         return k != null && k.getNamespace().equals("polly_pets");
+    }
+
+    /** Perroquet vanilla : animal de compagnie « léger » (assis, menu, carnet, collier, inconscient, parler), sans K9 ni combat ni portage. */
+    public static boolean isParrot(Entity e) { return e instanceof TamableAnimal && e.getType() == net.minecraft.world.entity.EntityType.PARROT; }
+
+    /** Animal géré par le mod : Polly Pets, plus le perroquet vanilla (config perroquet.actif). */
+    public static boolean isPet(Entity e) { return isPollyPet(e) || (isParrot(e) && PetsConfig.parrotEnabled()); }
+
+    /** Nom d'espèce en français (côté serveur les traductions de mods ne sont pas fiables pour le perroquet). */
+    public static String speciesName(Entity e) {
+        if (e instanceof net.minecraft.world.entity.animal.Parrot parrot && isParrot(e)) {
+            return parrot.getVariant() == net.minecraft.world.entity.animal.Parrot.Variant.GRAY ? "Gris du Gabon" : "Perroquet";
+        }
+        return e.getType().getDescription().getString();
     }
 
     public static boolean isK9(Entity e) { return e.getPersistentData().getBoolean(K9_TAG); }
@@ -86,7 +101,7 @@ public final class PetEvents {
     public static void onSleepTick(LivingEvent.LivingTickEvent ev) {
         if (!(ev.getEntity() instanceof TamableAnimal pet) || pet.level().isClientSide() || pet.tickCount % 20 != 0) return;
         if (!PetActions.isSleeping(pet)) return;
-        if (!isPollyPet(pet) || !pet.isTame()) { PetActions.wake(pet); return; }
+        if (!isPet(pet) || !pet.isTame()) { PetActions.wake(pet); return; }
         PetActions.sleepParticles(pet);
     }
 
@@ -98,12 +113,13 @@ public final class PetEvents {
     /** Le carnet de santé commence à l'apprivoisement (date d'adoption). */
     @SubscribeEvent(priority = net.minecraftforge.eventbus.api.EventPriority.LOW)
     public static void onTame(net.minecraftforge.event.entity.living.AnimalTameEvent ev) {
-        if (!ev.isCanceled() && !ev.getAnimal().level().isClientSide() && isPollyPet(ev.getAnimal())) PetBook.ensure(ev.getAnimal());
+        if (!ev.isCanceled() && !ev.getAnimal().level().isClientSide() && isPet(ev.getAnimal())) PetBook.ensure(ev.getAnimal());
     }
 
     @SubscribeEvent
     public static void onInteract(PlayerInteractEvent.EntityInteract ev) {
-        if (ev.getHand() != InteractionHand.MAIN_HAND || !(ev.getTarget() instanceof TamableAnimal pet) || !isPollyPet(pet) || !pet.isTame()) return;
+        if (ev.getHand() != InteractionHand.MAIN_HAND || !(ev.getTarget() instanceof TamableAnimal pet) || !isPet(pet) || !pet.isTame()) return;
+        boolean parrot = isParrot(pet);
         ItemStack st = ev.getEntity().getItemInHand(InteractionHand.MAIN_HAND);
         boolean client = ev.getLevel().isClientSide();
         // Accroupi, main nue, sur l'animal d'un autre : lire son collier.
@@ -114,9 +130,10 @@ public final class PetEvents {
             if (!client && ev.getEntity() instanceof ServerPlayer p) readCollar(p, pet);
             return;
         }
-        boolean harness = st.is(ModItems.K9_HARNESS.get());
+        boolean harness = !parrot && st.is(ModItems.K9_HARNESS.get());
         boolean collar = st.is(ModItems.COLLAR.get());
-        if (!harness && !collar && !(st.isEmpty() && PetsConfig.sitOnEmptyHand())) return;
+        // Perroquet : l'assise à main nue et l'épaule restent celles de Minecraft.
+        if (!harness && !collar && !(!parrot && st.isEmpty() && PetsConfig.sitOnEmptyHand())) return;
         ev.setCanceled(true);
         ev.setCancellationResult(InteractionResult.sidedSuccess(client));
         if (client || !(ev.getEntity() instanceof ServerPlayer p)) return;
@@ -172,7 +189,7 @@ public final class PetEvents {
         if (on) {
             pet.getPersistentData().putBoolean(K9_TAG, true);
             if (!pet.hasCustomName()) {
-                pet.setCustomName(Component.literal("§9K9 §f" + pet.getType().getDescription().getString()));
+                pet.setCustomName(Component.literal("§9K9 §f" + speciesName(pet)));
                 pet.getPersistentData().putBoolean(K9_NAMED, true);
             }
             K9Net.broadcast(pet, true);
