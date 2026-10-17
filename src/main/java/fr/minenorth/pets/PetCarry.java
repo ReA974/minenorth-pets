@@ -148,7 +148,7 @@ public final class PetCarry {
 
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent ev) {
-        if (ev.getEntity() instanceof ServerPlayer p) drop(p, null);
+        if (ev.getEntity() instanceof ServerPlayer p) { drop(p, null); PetCarnet.forgetPlayer(p.getUUID()); }
     }
 
     @SubscribeEvent

@@ -94,7 +94,10 @@ public final class PetCarnet {
             for (String line : PetBook.lines(server, pet)) if (!line.startsWith("§7Collier :")) out.add(line);
         } else {
             ListTag saved = st.getTag().getList(LINES, Tag.TAG_STRING);
-            for (int i = 0; i < saved.size(); i++) if (!saved.getString(i).startsWith("§7Collier :")) out.add(saved.getString(i));
+            for (int i = 0; i < saved.size() && i < 40; i++) {
+                String line = saved.getString(i);
+                if (!line.startsWith("§7Collier :")) out.add(line.length() > 200 ? line.substring(0, 200) : line);
+            }
             out.add("§8(animal non chargé : dernier relevé)");
         }
         out.add("§7Signalement : " + (e.lost ? "§c§lPERDU" : "§aen règle"));
@@ -269,6 +272,9 @@ public final class PetCarnet {
             PetBook.setLost(pet, e.lost);
         }
     }
+
+    /** Déconnexion : l'armement de l'abandon ne doit pas survivre. */
+    public static void forgetPlayer(UUID id) { ARMED.remove(id); }
 
     public static boolean isLost(TamableAnimal pet) {
         if (PetBook.isLost(pet)) return true;

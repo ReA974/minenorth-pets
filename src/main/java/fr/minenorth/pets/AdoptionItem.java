@@ -48,6 +48,8 @@ public class AdoptionItem extends Item {
         ResourceLocation id = speciesId(st);
         if (id == null) return null;
         if (id.equals(GABON)) return EntityType.PARROT;
+        // Sécurité : le NBT d'un certificat forgé ne doit pas pouvoir faire apparaître un wither, un dragon, un golem...
+        if (!"polly_pets".equals(id.getNamespace()) && !EntityType.getKey(EntityType.PARROT).equals(id)) return null;
         return ForgeRegistries.ENTITY_TYPES.containsKey(id) ? ForgeRegistries.ENTITY_TYPES.getValue(id) : null;
     }
 
@@ -75,6 +77,10 @@ public class AdoptionItem extends Item {
         BlockPos pos = ctx.getClickedPos().relative(ctx.getClickedFace());
         var e = type.spawn(sl, ItemStack.EMPTY, p, pos, MobSpawnType.SPAWN_EGG, true, false);
         if (e == null) return InteractionResult.FAIL;
+        if (!(e instanceof TamableAnimal)) {   // jamais autre chose qu'un animal apprivoisable ; on ne consomme pas le certificat
+            e.discard();
+            return InteractionResult.FAIL;
+        }
         if (e instanceof net.minecraft.world.entity.animal.Parrot parrot && GABON.equals(speciesId(st))) parrot.setVariant(net.minecraft.world.entity.animal.Parrot.Variant.GRAY);
         if (e instanceof TamableAnimal pet) {
             pet.tame(p);
