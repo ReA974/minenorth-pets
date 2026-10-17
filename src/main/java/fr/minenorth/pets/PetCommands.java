@@ -18,6 +18,11 @@ public final class PetCommands {
     @SubscribeEvent
     public static void register(RegisterCommandsEvent e) {
         e.getDispatcher().register(Commands.literal("pets")
+                .then(Commands.literal("poser").executes(c -> {
+                    ServerPlayer p = c.getSource().getPlayerOrException();
+                    if (!PetCarry.drop(p, "§7Vous posez votre animal.")) p.displayClientMessage(Component.literal("§7Vous ne portez aucun animal."), true);
+                    return 1;
+                }))
                 .then(Commands.literal("accepter").executes(c -> {
                     PetFight.acceptAny(c.getSource().getPlayerOrException());
                     return 1;

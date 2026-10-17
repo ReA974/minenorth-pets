@@ -52,6 +52,8 @@ public final class PetEvents {
     @SubscribeEvent
     public static void onJoin(EntityJoinLevelEvent ev) {
         if (ev.getLevel().isClientSide() || !(ev.getEntity() instanceof TamableAnimal pet) || !isPollyPet(pet)) return;
+        // Un animal marqué « porté » sans porteur (redémarrage) est libéré.
+        if (pet.getPersistentData().getBoolean("minenorthpets_carried") && !PetCarry.isCarried(pet)) PetCarry.release(pet);
         // L'événement peut se répéter pour une même entité : on n'ajoute les comportements qu'une fois.
         if (pet.goalSelector.getAvailableGoals().stream().anyMatch(w -> w.getGoal() instanceof SitWhenOrderedToGoal)) return;
         pet.goalSelector.addGoal(0, new FightGoal(pet));
@@ -73,7 +75,7 @@ public final class PetEvents {
             if (ownerSeat == null || pet.isOrderedToSit() || MtsRide.vehicleOf(ownerSeat) != MtsRide.vehicleOf(petSeat)) MtsRide.eject(petSeat);
             return;
         }
-        if (ownerSeat == null || pet.isOrderedToSit() || pet.isPassenger()) return;
+        if (ownerSeat == null || pet.isOrderedToSit() || pet.isPassenger() || PetCarry.isCarried(pet)) return;
         double d = PetsConfig.k9BoardDistance();
         if (pet.distanceToSqr(pet.getOwner()) > d * d) return;
         MtsRide.board(pet, MtsRide.vehicleOf(ownerSeat));
@@ -90,7 +92,7 @@ public final class PetEvents {
 
     @SubscribeEvent
     public static void onHurt(net.minecraftforge.event.entity.living.LivingHurtEvent ev) {
-        if (ev.getEntity() instanceof TamableAnimal pet && !pet.level().isClientSide() && PetActions.isSleeping(pet)) PetActions.wake(pet);
+        if (ev.getEntity() instanceof TamableAnimal pet && !pet.level().isClientSide() && PetActions.isSleeping(pet) && !PetKo.isUnconscious(pet)) PetActions.wake(pet);
     }
 
     /** Le carnet de santé commence à l'apprivoisement (date d'adoption). */
@@ -144,6 +146,10 @@ public final class PetEvents {
 
     /** Assis / debout ; un animal qui dort se réveille (et se lève) au lieu de rester couché. */
     public static void toggleSit(ServerPlayer p, TamableAnimal pet) {
+        if (PetKo.isUnconscious(pet)) {
+            p.displayClientMessage(Component.literal("§cIl est inconscient : portez-le chez le vétérinaire."), true);
+            return;
+        }
         boolean sit = !pet.isOrderedToSit() || PetActions.isSleeping(pet);
         if (PetActions.isSleeping(pet)) {
             PetActions.wake(pet);

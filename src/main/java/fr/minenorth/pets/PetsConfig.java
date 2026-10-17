@@ -19,6 +19,8 @@ public final class PetsConfig {
     private static final ForgeConfigSpec.BooleanValue LOST_ALERT, COMBAT_ENABLED;
     private static final ForgeConfigSpec.IntValue COMBAT_SECONDS, COMBAT_KO_PERCENT, COMBAT_RANGE, COMBAT_ANSWER;
     private static final ForgeConfigSpec.DoubleValue COMBAT_DAMAGE;
+    private static final ForgeConfigSpec.BooleanValue CARRY_ENABLED, KO_ENABLED;
+    private static final ForgeConfigSpec.IntValue CARRY_SLOWNESS, KO_MINUTES;
 
     private static final List<String> DEFAULT_ITEMS = List.of(
             "minenorthdrogue:joint", "minenorthdrogue:cocaine", "minenorthdrogue:meth",
@@ -60,6 +62,14 @@ public final class PetsConfig {
         COMBAT_RANGE = b.comment("Portée du défi (blocs) : l'adversaire est l'animal apprivoisé le plus proche dans ce rayon").defineInRange("porteeDefi", 8, 2, 32);
         COMBAT_ANSWER = b.comment("Temps laissé au maître défié pour accepter (secondes)").defineInRange("delaiReponseSecondes", 30, 5, 300);
         b.pop();
+        b.comment("Porter son animal").push("portage");
+        CARRY_ENABLED = b.comment("Autorise « Porter » / « Poser » dans le menu de l'animal").define("actif", true);
+        CARRY_SLOWNESS = b.comment("Niveau de Lenteur du porteur (0 = aucune, 1 = Lenteur I, 2 = Lenteur II…)").defineInRange("lenteur", 1, 0, 4);
+        b.pop();
+        b.comment("Mort d'un animal apprivoisé : inconscient, à porter chez le vétérinaire").push("mort");
+        KO_ENABLED = b.comment("Un animal apprivoisé qui devrait mourir tombe inconscient (/kill et le vide le tuent toujours)").define("actif", true);
+        KO_MINUTES = b.comment("Minutes avant que l'animal inconscient meure pour de bon").defineInRange("delaiMinutes", 10, 1, 120);
+        b.pop();
         SPEC = b.build();
     }
 
@@ -83,6 +93,10 @@ public final class PetsConfig {
     public static int k9BoardDistance() { return val(K9_BOARD::get, 10); }
     public static String vetCompany() { return val(() -> VET_COMPANY.get(), ""); }
     public static boolean lostAlertsPolice() { return val(LOST_ALERT::get, true); }
+    public static boolean carryEnabled() { return val(CARRY_ENABLED::get, true); }
+    public static int carrySlowness() { return val(CARRY_SLOWNESS::get, 1); }
+    public static boolean koEnabled() { return val(KO_ENABLED::get, true); }
+    public static int koMinutes() { return val(KO_MINUTES::get, 10); }
     public static boolean combatEnabled() { return val(COMBAT_ENABLED::get, true); }
     public static int combatSeconds() { return val(COMBAT_SECONDS::get, 60); }
     public static double combatDamage() { return val(COMBAT_DAMAGE::get, 1.0); }

@@ -26,10 +26,10 @@ public final class PetActions {
     private static final int COOLDOWN_TICKS = 100;
     private static final double REACH = 8.0;
 
-    public static final int FLAG_SITTING = 1, FLAG_SLEEPING = 2, FLAG_STAYING = 4, FLAG_OWNER = 8, FLAG_VET = 16, FLAG_COLLAR = 32, FLAG_LOST = 64, FLAG_CHALLENGED = 128, FLAG_FIGHTING = 256;
+    public static final int FLAG_SITTING = 1, FLAG_SLEEPING = 2, FLAG_STAYING = 4, FLAG_OWNER = 8, FLAG_VET = 16, FLAG_COLLAR = 32, FLAG_LOST = 64, FLAG_CHALLENGED = 128, FLAG_FIGHTING = 256, FLAG_UNCONSCIOUS = 512, FLAG_CARRIED = 1024;
 
     /** Les 5 premières sont réservées au maître, BOOK au maître / vétérinaire / police, les 3 dernières au vétérinaire, LOST au maître. */
-    public enum Action { PET, PLAY, SLEEP, SIT, STAY, BOOK, VACCINE, HEAL, CHIP, LOST, CHALLENGE, ACCEPT, SEPARATE }
+    public enum Action { PET, PLAY, SLEEP, SIT, STAY, BOOK, VACCINE, HEAL, CHIP, LOST, CHALLENGE, ACCEPT, SEPARATE, CARRY, DROP, REVIVE }
 
     public static boolean isSleeping(Entity e) { return e.getPersistentData().getBoolean(SLEEP_TAG); }
     public static boolean isStaying(Entity e) { return e.getPersistentData().getBoolean(STAY_TAG); }
@@ -37,7 +37,7 @@ public final class PetActions {
     public static int flags(TamableAnimal pet) {
         return (pet.isOrderedToSit() ? FLAG_SITTING : 0) | (isSleeping(pet) ? FLAG_SLEEPING : 0) | (isStaying(pet) ? FLAG_STAYING : 0)
                 | (PetBook.hasCollar(pet) ? FLAG_COLLAR : 0) | (PetBook.isLost(pet) ? FLAG_LOST : 0)
-                | (PetFight.isFighting(pet) ? FLAG_FIGHTING : 0)
+                | (PetFight.isFighting(pet) ? FLAG_FIGHTING : 0) | (PetKo.isUnconscious(pet) ? FLAG_UNCONSCIOUS : 0) | (PetCarry.isCarried(pet) ? FLAG_CARRIED : 0)
                 | (pet.level().getServer() != null && PetFight.isChallenged(pet, pet.level().getServer()) ? FLAG_CHALLENGED : 0);
     }
 
@@ -62,7 +62,20 @@ public final class PetActions {
         boolean owner = pet.isOwnedBy(p);
         switch (action) {
             case PET, PLAY, SLEEP, SIT, STAY, LOST, CHALLENGE, ACCEPT, SEPARATE -> {
-                if (owner) perform(p, pet, action);
+                if (owner && PetKo.isUnconscious(pet)) {
+                    p.displayClientMessage(Component.literal("§cIl est inconscient : portez-le chez le vétérinaire."), true);
+                } else if (owner) {
+                    perform(p, pet, action);
+                }
+            }
+            case CARRY -> {
+                if (owner) PetCarry.carry(p, pet);
+            }
+            case DROP -> {
+                if (PetCarry.carriedBy(p) == pet) PetCarry.drop(p, "§7Vous posez votre animal.");
+            }
+            case REVIVE -> {
+                if (Compat.isVet(p)) PetKo.revive(p, pet);
             }
             case BOOK -> {
                 if (owner || Compat.isVet(p) || Compat.isPolice(p)) {
@@ -124,7 +137,7 @@ public final class PetActions {
                 }
             }
             case SIT -> PetEvents.toggleSit(p, pet);
-            case BOOK -> { }
+            case BOOK, CARRY, DROP, REVIVE -> { }
             case VACCINE -> {
                 PetBook.vaccinate(pet);
                 heartsAndSound(pet, 3);

@@ -30,11 +30,17 @@ public final class ClientPetEvents {
         public static void onUseKey(InputEvent.InteractionKeyMappingTriggered ev) {
             if (!ev.isUseItem() || !Screen.hasControlDown()) return;
             Minecraft mc = Minecraft.getInstance();
-            if (mc.player == null || mc.screen != null || !(mc.hitResult instanceof EntityHitResult hit)) return;
-            if (!(hit.getEntity() instanceof TamableAnimal pet) || !PetEvents.isPollyPet(pet) || !pet.isTame()) return;
-            ev.setCanceled(true);
-            ev.setSwingHand(false);
-            K9Net.CHANNEL.sendToServer(new K9Net.OpenRequest(pet.getId()));
+            if (mc.player == null || mc.screen != null) return;
+            if (mc.hitResult instanceof EntityHitResult hit && hit.getEntity() instanceof TamableAnimal pet && PetEvents.isPollyPet(pet) && pet.isTame()) {
+                ev.setCanceled(true);
+                ev.setSwingHand(false);
+                K9Net.CHANNEL.sendToServer(new K9Net.OpenRequest(pet.getId()));
+            } else if (ClientK9.isCarrying()) {
+                // On porte un animal : Ctrl + clic droit n'importe où ouvre son menu (pour le poser).
+                ev.setCanceled(true);
+                ev.setSwingHand(false);
+                K9Net.CHANNEL.sendToServer(new K9Net.OpenRequest(-1));
+            }
         }
     }
 

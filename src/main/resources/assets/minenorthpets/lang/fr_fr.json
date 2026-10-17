@@ -34,5 +34,8 @@
   "gui.minenorthpets.remark.cancel": "Annuler",
   "gui.minenorthpets.menu.challenge": "Défier",
   "gui.minenorthpets.menu.accept": "Accepter le combat",
-  "gui.minenorthpets.menu.separate": "Séparer"
+  "gui.minenorthpets.menu.separate": "Séparer",
+  "gui.minenorthpets.menu.carry": "Porter",
+  "gui.minenorthpets.menu.drop": "Poser",
+  "gui.minenorthpets.menu.revive": "Réanimer"
 }

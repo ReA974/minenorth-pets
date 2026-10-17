@@ -16,6 +16,7 @@ public final class ClientK9 {
 
     private static final Set<Integer> IDS = new HashSet<>();
     private static final Set<Integer> SLEEPING = new HashSet<>();
+    private static boolean carrying;
 
     public static void set(int entityId, boolean k9) {
         PetRenderHooks.LOGGER.info("[MineNorthPets] statut K9 reçu : entité {} -> {}", entityId, k9);
@@ -25,6 +26,10 @@ public final class ClientK9 {
     public static void setSleeping(int entityId, boolean sleeping) {
         if (sleeping) SLEEPING.add(entityId); else SLEEPING.remove(entityId);
     }
+
+    public static void setCarrying(boolean value) { carrying = value; }
+
+    public static boolean isCarrying() { return carrying; }
 
     public static boolean has(int entityId) { return IDS.contains(entityId); }
 

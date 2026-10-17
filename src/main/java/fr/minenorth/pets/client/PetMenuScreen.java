@@ -18,7 +18,7 @@ import java.util.List;
  * le vétérinaire a les soins, tout le monde peut lire le carnet de santé. Plus de 6 boutons : deux colonnes.
  */
 public class PetMenuScreen extends Screen {
-    private static final int BUTTON_W = 150, BUTTON_H = 24, GAP = 6, PAD = 14, TITLE_H = 22, MAX_ROWS = 6;
+    private static final int BUTTON_H = 24, GAP = 6, PAD = 14, TITLE_H = 22, MAX_ROWS = 6;
 
     /** Un bouton : libellé, action serveur (ou null pour ouvrir l'écran de remarque). */
     private record Entry(String labelKey, PetActions.Action action) {}
@@ -41,7 +41,11 @@ public class PetMenuScreen extends Screen {
     private boolean has(int flag) { return (flags & flag) != 0; }
 
     private void build() {
-        if (has(PetActions.FLAG_OWNER)) {
+        boolean unconscious = has(PetActions.FLAG_UNCONSCIOUS);
+        if (has(PetActions.FLAG_OWNER) && unconscious) {
+            // Inconscient : le maître ne peut que le porter (ou le poser) jusqu'au vétérinaire.
+            entries.add(carryEntry());
+        } else if (has(PetActions.FLAG_OWNER)) {
             boolean sitting = has(PetActions.FLAG_SITTING) && !has(PetActions.FLAG_SLEEPING);
             entries.add(new Entry("gui.minenorthpets.menu.pet", PetActions.Action.PET));
             entries.add(new Entry("gui.minenorthpets.menu.play", PetActions.Action.PLAY));
@@ -54,6 +58,7 @@ public class PetMenuScreen extends Screen {
             if (has(PetActions.FLAG_FIGHTING)) entries.add(new Entry("gui.minenorthpets.menu.separate", PetActions.Action.SEPARATE));
             else if (has(PetActions.FLAG_CHALLENGED)) entries.add(new Entry("gui.minenorthpets.menu.accept", PetActions.Action.ACCEPT));
             else entries.add(new Entry("gui.minenorthpets.menu.challenge", PetActions.Action.CHALLENGE));
+            entries.add(carryEntry());
         }
         entries.add(new Entry("gui.minenorthpets.menu.book", PetActions.Action.BOOK));
         if (has(PetActions.FLAG_VET)) {
@@ -61,12 +66,20 @@ public class PetMenuScreen extends Screen {
             entries.add(new Entry("gui.minenorthpets.menu.heal", PetActions.Action.HEAL));
             entries.add(new Entry("gui.minenorthpets.menu.remark", null));
             entries.add(new Entry("gui.minenorthpets.menu.chip", PetActions.Action.CHIP));
+            if (unconscious) entries.add(new Entry("gui.minenorthpets.menu.revive", PetActions.Action.REVIVE));
         }
     }
 
-    private int cols() { return entries.size() > MAX_ROWS ? 2 : 1; }
+    private Entry carryEntry() {
+        return has(PetActions.FLAG_CARRIED) ? new Entry("gui.minenorthpets.menu.drop", PetActions.Action.DROP)
+                : new Entry("gui.minenorthpets.menu.carry", PetActions.Action.CARRY);
+    }
+
+    private int buttonWidth() { return cols() == 3 ? 130 : 150; }
+
+    private int cols() { return entries.size() > MAX_ROWS * 2 ? 3 : entries.size() > MAX_ROWS ? 2 : 1; }
     private int rows() { return (entries.size() + cols() - 1) / cols(); }
-    private int panelWidth() { return cols() * BUTTON_W + (cols() - 1) * GAP + PAD * 2; }
+    private int panelWidth() { return cols() * buttonWidth() + (cols() - 1) * GAP + PAD * 2; }
     private int panelHeight() { return TITLE_H + PAD * 2 + rows() * BUTTON_H + (rows() - 1) * GAP; }
     private int panelTop() { return (height - panelHeight()) / 2; }
 
@@ -79,7 +92,7 @@ public class PetMenuScreen extends Screen {
         for (int i = 0; i < entries.size(); i++) {
             Entry e = entries.get(i);
             int col = i / rows(), row = i % rows();
-            addRenderableWidget(new RoundButton(left + col * (BUTTON_W + GAP), top + row * (BUTTON_H + GAP), BUTTON_W, BUTTON_H,
+            addRenderableWidget(new RoundButton(left + col * (buttonWidth() + GAP), top + row * (BUTTON_H + GAP), buttonWidth(), BUTTON_H,
                     Component.translatable(e.labelKey()), b -> {
                 if (e.action() == null) {
                     Minecraft.getInstance().setScreen(new PetRemarkScreen(entityId));

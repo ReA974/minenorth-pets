@@ -30,7 +30,7 @@ import java.util.function.Supplier;
 public final class K9Net {
     private K9Net() {}
 
-    private static final String PROTOCOL = "3";
+    private static final String PROTOCOL = "4";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(MineNorthPets.MOD_ID, "k9"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
@@ -56,6 +56,17 @@ public final class K9Net {
         }
     }
 
+    /** Dit au joueur s'il porte un animal (le client n'intercepte Ctrl + clic dans le vide que dans ce cas). */
+    public record CarrySync(boolean carrying) {
+        void encode(FriendlyByteBuf b) { b.writeBoolean(carrying); }
+        static CarrySync decode(FriendlyByteBuf b) { return new CarrySync(b.readBoolean()); }
+
+        void handle(Supplier<NetworkEvent.Context> ctx) {
+            ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> fr.minenorth.pets.client.ClientK9.setCarrying(carrying)));
+            ctx.get().setPacketHandled(true);
+        }
+    }
+
     public record OpenMenu(int entityId, int flags) {
         void encode(FriendlyByteBuf b) { b.writeVarInt(entityId); b.writeVarInt(flags); }
         static OpenMenu decode(FriendlyByteBuf b) { return new OpenMenu(b.readVarInt(), b.readVarInt()); }
@@ -75,14 +86,15 @@ public final class K9Net {
         void handle(Supplier<NetworkEvent.Context> ctx) {
             ServerPlayer p = ctx.get().getSender();
             ctx.get().enqueueWork(() -> {
-                TamableAnimal pet = p == null ? null : PetActions.targetAny(p, entityId);
+                // entityId -1 : Ctrl + clic dans le vide pendant qu'on porte un animal -> menu de l'animal porté.
+                TamableAnimal pet = p == null ? null : entityId == -1 ? PetCarry.carriedBy(p) : PetActions.targetAny(p, entityId);
                 if (pet == null) return;
                 int flags = PetActions.menuFlags(p, pet);
                 if (flags == 0) {
                     p.displayClientMessage(net.minecraft.network.chat.Component.literal("§7Ce n'est pas votre animal."), true);
                     return;
                 }
-                CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), new OpenMenu(entityId, flags));
+                CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), new OpenMenu(pet.getId(), flags));
             });
             ctx.get().setPacketHandled(true);
         }
@@ -138,7 +150,12 @@ public final class K9Net {
         CHANNEL.registerMessage(3, OpenRequest.class, OpenRequest::encode, OpenRequest::decode, OpenRequest::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(4, Action.class, Action::encode, Action::decode, Action::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(5, Remark.class, Remark::encode, Remark::decode, Remark::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(7, CarrySync.class, CarrySync::encode, CarrySync::decode, CarrySync::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(6, Book.class, Book::encode, Book::decode, Book::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    public static void sendCarry(ServerPlayer p, boolean carrying) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), new CarrySync(carrying));
     }
 
     /** À appeler après un changement de statut K9. */

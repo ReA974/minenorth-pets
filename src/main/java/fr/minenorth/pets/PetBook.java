@@ -25,6 +25,8 @@ public final class PetBook {
     private static final String COLLAR = "minenorthpets_collar";
     private static final int MAX_VACCINES = 12, MAX_REMARKS = 8, MAX_REMARK_LENGTH = 48;
 
+    public static String todayText() { return today(); }
+
     private static String today() { return LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")); }
 
     /** Le carnet de l'animal ; créé (date d'adoption = aujourd'hui) s'il n'existe pas encore. */
@@ -66,6 +68,14 @@ public final class PetBook {
     public static void remark(Entity pet, String text) {
         ListTag list = ensure(pet).getList("remarks", Tag.TAG_STRING);
         list.add(StringTag.valueOf(today() + " : " + clean(text)));
+        while (list.size() > MAX_REMARKS) list.remove(0);
+        ensure(pet).put("remarks", list);
+    }
+
+    /** Ligne système du carnet (ex. réanimation), sans la date automatique des remarques. */
+    public static void addLine(Entity pet, String text) {
+        ListTag list = ensure(pet).getList("remarks", Tag.TAG_STRING);
+        list.add(StringTag.valueOf(text.replace("§", "").length() > 90 ? text.substring(0, 90) : text.replace("§", "")));
         while (list.size() > MAX_REMARKS) list.remove(0);
         ensure(pet).put("remarks", list);
     }
@@ -112,6 +122,7 @@ public final class PetBook {
         out.add("§7Vaccins : " + (vaccines.isEmpty() ? "§caucun" : "§f" + vaccines.size() + " (dernier : " + vaccines.getString(vaccines.size() - 1) + ")"));
         int cares = b.getInt("cares");
         out.add("§7Soins : " + (cares == 0 ? "§faucun" : "§f" + cares + " (dernier : " + b.getString("lastCare") + ")"));
+        if (PetKo.isUnconscious(pet)) out.add("§7État : §c§lINCONSCIENT §7(" + PetKo.minutesLeft(pet) + " min avant la mort)");
         out.add("§7Collier : " + (hasCollar(pet) ? (isLost(pet) ? "§c§lSIGNALÉ PERDU" : "§aen règle") : "§fnon"));
         ListTag remarks = b.getList("remarks", Tag.TAG_STRING);
         out.add("§7Remarques :" + (remarks.isEmpty() ? " §8aucune" : ""));
