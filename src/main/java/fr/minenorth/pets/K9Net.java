@@ -30,7 +30,7 @@ import java.util.function.Supplier;
 public final class K9Net {
     private K9Net() {}
 
-    private static final String PROTOCOL = "6";
+    private static final String PROTOCOL = "7";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(MineNorthPets.MOD_ID, "k9"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
@@ -157,6 +157,20 @@ public final class K9Net {
         }
     }
 
+    /** Nom choisi par le maître depuis le carnet de poche (le serveur nettoie le texte et revérifie le carnet). */
+    public record BookRename(String name) {
+        void encode(FriendlyByteBuf b) { b.writeUtf(name, 64); }
+        static BookRename decode(FriendlyByteBuf b) { return new BookRename(b.readUtf(64)); }
+
+        void handle(Supplier<NetworkEvent.Context> ctx) {
+            ServerPlayer p = ctx.get().getSender();
+            ctx.get().enqueueWork(() -> {
+                if (p != null) PetCarnet.rename(p, name);
+            });
+            ctx.get().setPacketHandled(true);
+        }
+    }
+
     /** Contenu du carnet de santé, envoyé au joueur qui le demande. */
     public record Book(java.util.List<String> lines) {
         void encode(FriendlyByteBuf b) { b.writeCollection(lines, (buf, line) -> buf.writeUtf(line, 300)); }
@@ -178,6 +192,7 @@ public final class K9Net {
         CHANNEL.registerMessage(7, CarrySync.class, CarrySync::encode, CarrySync::decode, CarrySync::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(8, BookOpen.class, BookOpen::encode, BookOpen::decode, BookOpen::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(9, BookAction.class, BookAction::encode, BookAction::decode, BookAction::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(10, BookRename.class, BookRename::encode, BookRename::decode, BookRename::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(6, Book.class, Book::encode, Book::decode, Book::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
     }
 

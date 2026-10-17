@@ -44,7 +44,7 @@ public class PetMenuScreen extends Screen {
     private void build() {
         boolean unconscious = has(PetActions.FLAG_UNCONSCIOUS);
         if (has(PetActions.FLAG_OWNER) && has(PetActions.FLAG_PARROT)) {
-            // Perroquet : caresser, assis / debout, parler, signalement ; pas de jeu, sommeil, combat ni portage.
+            // Perroquet : caresser, assis / debout, parler, porter sur l'épaule, signalement ; pas de jeu, sommeil ni combat.
             if (!unconscious) {
                 entries.add(new Entry("gui.minenorthpets.menu.pet", PetActions.Action.PET));
                 entries.add(new Entry(has(PetActions.FLAG_SITTING) ? "gui.minenorthpets.menu.stand" : "gui.minenorthpets.menu.sit", PetActions.Action.SIT));
@@ -52,6 +52,9 @@ public class PetMenuScreen extends Screen {
                 if (has(PetActions.FLAG_COLLAR)) {
                     entries.add(new Entry(has(PetActions.FLAG_LOST) ? "gui.minenorthpets.menu.found" : "gui.minenorthpets.menu.lost", PetActions.Action.LOST));
                 }
+                entries.add(carryEntry());
+            } else {
+                entries.add(carryEntry());
             }
         } else if (has(PetActions.FLAG_OWNER) && unconscious) {
             // Inconscient : le maître ne peut que le porter (ou le poser) jusqu'au vétérinaire.

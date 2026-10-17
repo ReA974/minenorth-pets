@@ -34,7 +34,7 @@ public class PetBookScreen extends Screen {
     }
 
     private int panelWidth() {
-        int w = withActions ? 340 - PAD * 2 : 180;
+        int w = withActions ? 420 - PAD * 2 : 180;
         for (String l : lines) w = Math.max(w, font.width(l));
         return Math.min(w, width - 40) + PAD * 2;
     }
@@ -49,13 +49,16 @@ public class PetBookScreen extends Screen {
             addRenderableWidget(new PetMenuScreen.RoundButton((width - 100) / 2, y, 100, 22, Component.translatable("gui.minenorthpets.book.close"), b -> onClose()));
             return;
         }
-        int x = (width - 308) / 2;
-        addRenderableWidget(new PetMenuScreen.RoundButton(x, y, 100, 22,
+        int x = (width - 396) / 2;
+        addRenderableWidget(new PetMenuScreen.RoundButton(x, y, 96, 22,
+                Component.translatable("gui.minenorthpets.book.rename"), b -> Minecraft.getInstance().setScreen(new PetNameScreen())));
+        x += 100;
+        addRenderableWidget(new PetMenuScreen.RoundButton(x, y, 96, 22,
                 Component.translatable(lost ? "gui.minenorthpets.book.found" : "gui.minenorthpets.book.lost"), b -> {
             K9Net.CHANNEL.sendToServer(new K9Net.BookAction(0));
             onClose();
         }));
-        PetMenuScreen.RoundButton abandon = new PetMenuScreen.RoundButton(x + 104, y, 100, 22, Component.translatable("gui.minenorthpets.book.abandon"), b -> {});
+        PetMenuScreen.RoundButton abandon = new PetMenuScreen.RoundButton(x + 100, y, 96, 22, Component.translatable("gui.minenorthpets.book.abandon"), b -> {});
         abandon.setOnPress(b -> {
             boolean armed = System.currentTimeMillis() < armedUntil;
             K9Net.CHANNEL.sendToServer(new K9Net.BookAction(1));
@@ -67,7 +70,7 @@ public class PetBookScreen extends Screen {
             }
         });
         addRenderableWidget(abandon);
-        addRenderableWidget(new PetMenuScreen.RoundButton(x + 208, y, 100, 22, Component.translatable("gui.minenorthpets.book.close"), b -> onClose()));
+        addRenderableWidget(new PetMenuScreen.RoundButton(x + 200, y, 96, 22, Component.translatable("gui.minenorthpets.book.close"), b -> onClose()));
     }
 
     @Override

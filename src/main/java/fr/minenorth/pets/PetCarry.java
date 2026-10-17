@@ -115,7 +115,13 @@ public final class PetCarry {
         Vec3 right = new Vec3(-look.z, 0, look.x);
         double x = p.getX() + look.x * 0.55 + right.x * 0.35;
         double z = p.getZ() + look.z * 0.55 + right.z * 0.35;
-        pet.moveTo(x, p.getY() + 0.65, z, p.getYRot(), 0);
+        if (PetEvents.isParrot(pet)) {   // le perroquet se porte sur l'épaule
+            x = p.getX() + right.x * 0.4;
+            z = p.getZ() + right.z * 0.4;
+            pet.moveTo(x, p.getY() + 1.3, z, p.getYRot(), 0);
+        } else {
+            pet.moveTo(x, p.getY() + 0.65, z, p.getYRot(), 0);
+        }
         pet.yBodyRot = p.getYRot();
         pet.yHeadRot = p.getYRot();
         pet.setDeltaMovement(Vec3.ZERO);
@@ -142,7 +148,7 @@ public final class PetCarry {
             }
             place(p, pet);
             int level = PetsConfig.carrySlowness();
-            if (slow && level > 0) p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, level - 1, true, false, true));
+            if (slow && level > 0 && !PetEvents.isParrot(pet)) p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, level - 1, true, false, true));
         }
     }
 

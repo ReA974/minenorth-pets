@@ -29,6 +29,9 @@ public final class PetEvents {
 
     public static final String K9_TAG = "minenorthpets_k9";
     private static final String K9_NAMED = "minenorthpets_k9name";
+
+    /** Le maître a choisi un nom : il ne doit plus être effacé quand l'animal cesse d'être K9. */
+    public static void keepName(net.minecraft.world.entity.Entity pet) { pet.getPersistentData().remove(K9_NAMED); }
     /** Morceaux de nom d'entité Polly Pets qui ne sont pas des chiens : pas de K9. */
     private static final List<String> NOT_DOGS = List.of("hamster", "kitty", "kitten", "calico", "bombay", "british", "khao", "ferret",
             "snake", "chameleon", "gecko", "tortoise", "egg", "parrot");
@@ -51,7 +54,9 @@ public final class PetEvents {
         if (e instanceof net.minecraft.world.entity.animal.Parrot parrot && isParrot(e)) {
             return parrot.getVariant() == net.minecraft.world.entity.animal.Parrot.Variant.GRAY ? "Gris du Gabon" : "Perroquet";
         }
-        return e.getType().getDescription().getString();
+        ResourceLocation key = ForgeRegistries.ENTITY_TYPES.getKey(e.getType());
+        String fr = key != null && key.getNamespace().equals("polly_pets") ? SpeciesFr.of(key.getPath()) : null;
+        return fr != null ? fr : e.getType().getDescription().getString();
     }
 
     public static boolean isK9(Entity e) { return e.getPersistentData().getBoolean(K9_TAG); }

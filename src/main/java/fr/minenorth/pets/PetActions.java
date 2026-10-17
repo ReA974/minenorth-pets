@@ -61,9 +61,9 @@ public final class PetActions {
         TamableAnimal pet = targetAny(p, entityId);
         if (pet == null) return;
         boolean owner = pet.isOwnedBy(p);
-        // Le perroquet n'a ni jeu, ni sommeil couché, ni « rester ici », ni combat, ni portage ; « Faire parler » n'existe que pour lui.
+        // Le perroquet n'a ni jeu, ni sommeil couché, ni « rester ici », ni combat ; « Faire parler » n'existe que pour lui.
         boolean parrot = PetEvents.isParrot(pet);
-        if (parrot && switch (action) { case PLAY, SLEEP, STAY, CHALLENGE, ACCEPT, SEPARATE, CARRY, DROP, BOARD, ALIGHT -> true; default -> false; }) return;
+        if (parrot && switch (action) { case PLAY, SLEEP, STAY, CHALLENGE, ACCEPT, SEPARATE, BOARD, ALIGHT -> true; default -> false; }) return;
         if (!parrot && action == Action.TALK) return;
         switch (action) {
             case PET, PLAY, SLEEP, SIT, STAY, LOST, CHALLENGE, ACCEPT, SEPARATE, TALK -> {

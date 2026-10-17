@@ -245,6 +245,33 @@ public final class PetCarnet {
         abandon(p, st, petId, e, pet);
     }
 
+    /** Le maître nomme son animal depuis le carnet (animal chargé requis). Texte nettoyé côté serveur ; vide = retire le nom. */
+    public static void rename(ServerPlayer p, String raw) {
+        ItemStack st = heldBook(p);
+        UUID petId = st.isEmpty() ? null : petOf(st);
+        if (!PetsConfig.carnetEnabled() || petId == null) { bar(p, "§7Tenez le carnet de santé en main."); return; }
+        LostPets.Entry e = valid(p, st, petId);
+        if (e == null) return;
+        TamableAnimal pet = findLoaded(p.server, petId);
+        if (pet == null || !pet.isOwnedBy(p)) { bar(p, "§7Votre animal n'est pas chargé : rapprochez-vous de lui pour le nommer."); return; }
+        StringBuilder sb = new StringBuilder();
+        for (char c : raw.toCharArray()) if (c >= 32 && c != '§' && c != 127) sb.append(c);
+        String name = sb.toString().trim();
+        if (name.length() > 24) name = name.substring(0, 24).trim();
+        PetEvents.keepName(pet);
+        if (name.isEmpty()) {
+            pet.setCustomName(null);
+            bar(p, "§7Le nom de votre animal a été retiré.");
+        } else {
+            pet.setCustomName(Component.literal(name));
+            pet.setCustomNameVisible(true);
+            bar(p, "§aVotre animal s'appelle désormais §e" + name + "§a.");
+        }
+        refresh(e, pet);
+        LostPets.get(p.server).setDirty();
+        write(st, p.server, pet, e);
+    }
+
     private static void abandon(ServerPlayer p, ItemStack st, UUID petId, LostPets.Entry e, @Nullable TamableAnimal pet) {
         String who = Compat.displayName(p.server, p.getUUID(), p.getGameProfile().getName());
         String note = "Abandonné par " + who + " le " + PetBook.todayText();
