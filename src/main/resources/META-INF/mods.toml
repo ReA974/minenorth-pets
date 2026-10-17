@@ -36,3 +36,10 @@ mandatory=true
 versionRange="[4.0,5)"
 ordering="AFTER"
 side="BOTH"
+
+[[dependencies.minenorthpets]]
+modId="minenorthapi"
+mandatory=true
+versionRange="[1.0.0,2)"
+ordering="AFTER"
+side="BOTH"
