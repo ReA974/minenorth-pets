@@ -51,6 +51,9 @@ public class PetMenuScreen extends Screen {
             if (has(PetActions.FLAG_COLLAR)) {
                 entries.add(new Entry(has(PetActions.FLAG_LOST) ? "gui.minenorthpets.menu.found" : "gui.minenorthpets.menu.lost", PetActions.Action.LOST));
             }
+            if (has(PetActions.FLAG_FIGHTING)) entries.add(new Entry("gui.minenorthpets.menu.separate", PetActions.Action.SEPARATE));
+            else if (has(PetActions.FLAG_CHALLENGED)) entries.add(new Entry("gui.minenorthpets.menu.accept", PetActions.Action.ACCEPT));
+            else entries.add(new Entry("gui.minenorthpets.menu.challenge", PetActions.Action.CHALLENGE));
         }
         entries.add(new Entry("gui.minenorthpets.menu.book", PetActions.Action.BOOK));
         if (has(PetActions.FLAG_VET)) {

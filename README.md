@@ -25,6 +25,17 @@ Chaque animal apprivoisé a un carnet (dans les données persistantes de l'entit
 - **Accroupi, main nue, sur l'animal d'un autre** : « Cet animal appartient à <nom> » (signalé perdu le cas échéant).
 - **Signaler perdu / retrouvé** (menu, collier requis) : drapeau lisible sur le collier et dans le carnet, et message à la police en service (`PoliceService.alertPolice` par réflexion ; `[collier] alerterPolice` pour le couper). Pas de fourrière ni de faim.
 
+## Combats d'animaux
+Jeu sans mort entre animaux apprivoisés de **maîtres différents**, uniquement si les deux maîtres sont d'accord.
+1. **Défier** (menu Ctrl + clic droit) : l'animal apprivoisé le plus proche (≤ `porteeDefi` blocs) dont le maître est un autre joueur, en ligne.
+2. Le maître défié reçoit un message cliquable et accepte avec **Accepter le combat** (menu de son animal) ou `/pets accepter`, dans les `delaiReponseSecondes` ; sans accord, rien ne se passe.
+3. Combat : `FightGoal` (priorité 0) rapproche les animaux ; un coup de `degats` points de vie toutes les 15 ticks (source `mobAttack` entre les deux animaux seulement, son de grognement, particules, balancement de patte). Pas d'animation d'attaque GeckoLib (seul le chat en a une, jamais déclenchée par Polly Pets).
+4. **KO** : un coup qui ferait passer un animal sous `seuilKoPourcent` % de sa vie max ne passe pas ; le combat s'arrête, vainqueur annoncé aux deux maîtres (barre d'action), cœurs / feux d'artifice, le perdant reste assis 10 s. Filet de sécurité : tout dégât mortel sur un animal en combat est annulé et déclenche le KO. Durée max `dureeMaxSecondes`, puis match nul. **Séparer** arrête le combat.
+Rien n'est enregistré sur disque : un redémarrage met fin à tout combat. Config `[combat]` : `actif`, `dureeMaxSecondes`, `degats`, `seuilKoPourcent`, `porteeDefi`, `delaiReponseSecondes`.
+
+## K9 : pseudo, jamais le nom RP
+Les messages de détection du K9 (au maître, au suspect) affichent le pseudo Minecraft du suspect (`getGameProfile().getName()`). Le nom RP (`Compat.displayName`) n'est utilisé que pour le collier, le carnet de santé et le signalement d'animal perdu.
+
 ## Langues
 Tout est en français. `en_us.json` reprend le même français (le client peut être en anglais) pour ne jamais afficher de clé brute. `assets/polly_pets/lang/fr_fr.json` et `en_us.json` (dans ce mod) traduisent en français les entités, œufs d'apparition, niches, litières, gamelles et paniers de Polly Pets, avec les mêmes clés que le jar d'origine ; ce mod se charge après Polly Pets, donc sa traduction l'emporte.
 

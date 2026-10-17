@@ -26,17 +26,19 @@ public final class PetActions {
     private static final int COOLDOWN_TICKS = 100;
     private static final double REACH = 8.0;
 
-    public static final int FLAG_SITTING = 1, FLAG_SLEEPING = 2, FLAG_STAYING = 4, FLAG_OWNER = 8, FLAG_VET = 16, FLAG_COLLAR = 32, FLAG_LOST = 64;
+    public static final int FLAG_SITTING = 1, FLAG_SLEEPING = 2, FLAG_STAYING = 4, FLAG_OWNER = 8, FLAG_VET = 16, FLAG_COLLAR = 32, FLAG_LOST = 64, FLAG_CHALLENGED = 128, FLAG_FIGHTING = 256;
 
     /** Les 5 premières sont réservées au maître, BOOK au maître / vétérinaire / police, les 3 dernières au vétérinaire, LOST au maître. */
-    public enum Action { PET, PLAY, SLEEP, SIT, STAY, BOOK, VACCINE, HEAL, CHIP, LOST }
+    public enum Action { PET, PLAY, SLEEP, SIT, STAY, BOOK, VACCINE, HEAL, CHIP, LOST, CHALLENGE, ACCEPT, SEPARATE }
 
     public static boolean isSleeping(Entity e) { return e.getPersistentData().getBoolean(SLEEP_TAG); }
     public static boolean isStaying(Entity e) { return e.getPersistentData().getBoolean(STAY_TAG); }
 
     public static int flags(TamableAnimal pet) {
         return (pet.isOrderedToSit() ? FLAG_SITTING : 0) | (isSleeping(pet) ? FLAG_SLEEPING : 0) | (isStaying(pet) ? FLAG_STAYING : 0)
-                | (PetBook.hasCollar(pet) ? FLAG_COLLAR : 0) | (PetBook.isLost(pet) ? FLAG_LOST : 0);
+                | (PetBook.hasCollar(pet) ? FLAG_COLLAR : 0) | (PetBook.isLost(pet) ? FLAG_LOST : 0)
+                | (PetFight.isFighting(pet) ? FLAG_FIGHTING : 0)
+                | (pet.level().getServer() != null && PetFight.isChallenged(pet, pet.level().getServer()) ? FLAG_CHALLENGED : 0);
     }
 
     /** Flags du menu pour ce joueur : états de l'animal + droits (maître, vétérinaire). 0 s'il n'a aucun droit de lecture. */
@@ -59,7 +61,7 @@ public final class PetActions {
         if (pet == null) return;
         boolean owner = pet.isOwnedBy(p);
         switch (action) {
-            case PET, PLAY, SLEEP, SIT, STAY, LOST -> {
+            case PET, PLAY, SLEEP, SIT, STAY, LOST, CHALLENGE, ACCEPT, SEPARATE -> {
                 if (owner) perform(p, pet, action);
             }
             case BOOK -> {
@@ -139,6 +141,9 @@ public final class PetActions {
                 msg(p, number == null ? "§7Cet animal est déjà pucé." : "§aPuce posée : §f" + number);
             }
             case LOST -> lost(p, pet);
+            case CHALLENGE -> PetFight.challenge(p, pet);
+            case ACCEPT -> PetFight.acceptFor(p, pet);
+            case SEPARATE -> PetFight.separate(p, pet);
             case STAY -> {
                 boolean stay = !isStaying(pet);
                 if (stay) pet.getPersistentData().putBoolean(STAY_TAG, true); else pet.getPersistentData().remove(STAY_TAG);

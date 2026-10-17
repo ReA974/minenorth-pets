@@ -17,8 +17,12 @@ public final class PetCommands {
 
     @SubscribeEvent
     public static void register(RegisterCommandsEvent e) {
-        e.getDispatcher().register(Commands.literal("pets").requires(s -> s.hasPermission(2))
-                .then(Commands.literal("certificat")
+        e.getDispatcher().register(Commands.literal("pets")
+                .then(Commands.literal("accepter").executes(c -> {
+                    PetFight.acceptAny(c.getSource().getPlayerOrException());
+                    return 1;
+                }))
+                .then(Commands.literal("certificat").requires(s -> s.hasPermission(2))
                         .then(Commands.argument("espece", StringArgumentType.word())
                                 .suggests((c, b) -> SharedSuggestionProvider.suggest(ModItems.speciesIds().stream().map(ResourceLocation::toString), b))
                                 .executes(c -> {

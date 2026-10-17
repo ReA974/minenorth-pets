@@ -54,6 +54,7 @@ public final class PetEvents {
         if (ev.getLevel().isClientSide() || !(ev.getEntity() instanceof TamableAnimal pet) || !isPollyPet(pet)) return;
         // L'événement peut se répéter pour une même entité : on n'ajoute les comportements qu'une fois.
         if (pet.goalSelector.getAvailableGoals().stream().anyMatch(w -> w.getGoal() instanceof SitWhenOrderedToGoal)) return;
+        pet.goalSelector.addGoal(0, new FightGoal(pet));
         pet.goalSelector.addGoal(2, new SitWhenOrderedToGoal(pet));
         pet.goalSelector.addGoal(1, new K9SniffGoal(pet));
         pet.goalSelector.addGoal(2, new StayGoal(pet));

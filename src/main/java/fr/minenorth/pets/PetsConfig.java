@@ -16,7 +16,9 @@ public final class PetsConfig {
     private static final ForgeConfigSpec.IntValue K9_RADIUS, K9_INTERVAL, K9_COOLDOWN, K9_BOARD;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> K9_ITEMS;
     private static final ForgeConfigSpec.ConfigValue<String> VET_COMPANY;
-    private static final ForgeConfigSpec.BooleanValue LOST_ALERT;
+    private static final ForgeConfigSpec.BooleanValue LOST_ALERT, COMBAT_ENABLED;
+    private static final ForgeConfigSpec.IntValue COMBAT_SECONDS, COMBAT_KO_PERCENT, COMBAT_RANGE, COMBAT_ANSWER;
+    private static final ForgeConfigSpec.DoubleValue COMBAT_DAMAGE;
 
     private static final List<String> DEFAULT_ITEMS = List.of(
             "minenorthdrogue:joint", "minenorthdrogue:cocaine", "minenorthdrogue:meth",
@@ -50,6 +52,14 @@ public final class PetsConfig {
         b.comment("Collier d'identification").push("collier");
         LOST_ALERT = b.comment("« Signaler perdu / retrouvé » envoie un message à la police en service (mod Police)").define("alerterPolice", true);
         b.pop();
+        b.comment("Combats d'animaux (jeu : sans mort)").push("combat");
+        COMBAT_ENABLED = b.comment("Autorise « Défier » entre animaux apprivoisés de maîtres différents").define("actif", true);
+        COMBAT_SECONDS = b.comment("Durée maximale d'un combat (secondes), puis match nul").defineInRange("dureeMaxSecondes", 60, 10, 600);
+        COMBAT_DAMAGE = b.comment("Dégâts de chaque coup (en points de vie ; 1.0 = un demi-coeur), un coup toutes les 15 ticks").defineInRange("degats", 1.0, 0.5, 4.0);
+        COMBAT_KO_PERCENT = b.comment("Seuil de KO : le combat s'arrête quand la vie passerait sous ce pourcentage de la vie maximale").defineInRange("seuilKoPourcent", 30, 5, 60);
+        COMBAT_RANGE = b.comment("Portée du défi (blocs) : l'adversaire est l'animal apprivoisé le plus proche dans ce rayon").defineInRange("porteeDefi", 8, 2, 32);
+        COMBAT_ANSWER = b.comment("Temps laissé au maître défié pour accepter (secondes)").defineInRange("delaiReponseSecondes", 30, 5, 300);
+        b.pop();
         SPEC = b.build();
     }
 
@@ -73,6 +83,12 @@ public final class PetsConfig {
     public static int k9BoardDistance() { return val(K9_BOARD::get, 10); }
     public static String vetCompany() { return val(() -> VET_COMPANY.get(), ""); }
     public static boolean lostAlertsPolice() { return val(LOST_ALERT::get, true); }
+    public static boolean combatEnabled() { return val(COMBAT_ENABLED::get, true); }
+    public static int combatSeconds() { return val(COMBAT_SECONDS::get, 60); }
+    public static double combatDamage() { return val(COMBAT_DAMAGE::get, 1.0); }
+    public static double combatKoRatio() { return val(COMBAT_KO_PERCENT::get, 30) / 100.0; }
+    public static int combatRange() { return val(COMBAT_RANGE::get, 8); }
+    public static int combatAnswerSeconds() { return val(COMBAT_ANSWER::get, 30); }
     @SuppressWarnings("unchecked")
     public static List<String> k9Items() { return val(() -> (List<String>) K9_ITEMS.get(), DEFAULT_ITEMS); }
 }
