@@ -136,9 +136,17 @@ public class PetMenuScreen extends Screen {
 
     /** Bouton rectangle à coins très arrondis. */
     static final class RoundButton extends Button {
+        private OnPress press;
+
         RoundButton(int x, int y, int w, int h, Component label, OnPress onPress) {
-            super(x, y, w, h, label, onPress, DEFAULT_NARRATION);
+            super(x, y, w, h, label, b -> {}, DEFAULT_NARRATION);
+            this.press = onPress;
         }
+
+        void setOnPress(OnPress onPress) { this.press = onPress; }
+
+        @Override
+        public void onPress() { press.onPress(this); }
 
         @Override
         public void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {

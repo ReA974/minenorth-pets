@@ -69,6 +69,19 @@ public final class PetCarry {
         place(p, pet);
     }
 
+    /** L'animal n'est plus à porter (abandon, perte du maître) : on oublie le portage sans le replacer. */
+    public static void forget(TamableAnimal pet) {
+        for (Map.Entry<UUID, UUID> en : new ArrayList<>(BY_PLAYER.entrySet())) {
+            if (!en.getValue().equals(pet.getUUID())) continue;
+            BY_PLAYER.remove(en.getKey());
+            if (pet.level().getServer() != null) {
+                ServerPlayer p = pet.level().getServer().getPlayerList().getPlayer(en.getKey());
+                if (p != null) K9Net.sendCarry(p, false);
+            }
+        }
+        if (pet.getPersistentData().getBoolean(TAG)) release(pet);
+    }
+
     /** Pose l'animal devant le joueur. Renvoie faux si le joueur ne portait rien. */
     public static boolean drop(ServerPlayer p, String message) {
         UUID id = BY_PLAYER.remove(p.getUUID());

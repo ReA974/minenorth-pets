@@ -156,6 +156,14 @@ public final class PetFight {
         }
     }
 
+    /** L'animal sort de tout combat ou défi (abandon). */
+    public static void forget(TamableAnimal pet) {
+        PENDING.remove(pet.getUUID());
+        Fight f = BY_PET.get(pet.getUUID());
+        if (f != null) end(pet.level().getServer(), f);
+        pet.getNavigation().stop();
+    }
+
     public static void separate(ServerPlayer p, TamableAnimal pet) {
         Fight f = BY_PET.get(pet.getUUID());
         if (f == null) { bar(p, "§7Votre animal n'est pas en combat."); return; }

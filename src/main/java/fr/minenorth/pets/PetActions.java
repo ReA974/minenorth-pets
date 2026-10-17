@@ -185,17 +185,8 @@ public final class PetActions {
             msg(p, "§cPosez d'abord un collier d'identification sur votre animal.");
             return;
         }
-        boolean lost = !PetBook.isLost(pet);
-        PetBook.setLost(pet, lost);
-        String chip = PetBook.ensure(pet).getString("chip");
-        String owner = Compat.displayName(p.server, p.getUUID(), p.getGameProfile().getName());
-        String what = PetEvents.speciesName(pet) + (pet.hasCustomName() ? " « " + pet.getCustomName().getString() + " »" : "");
-        if (PetsConfig.lostAlertsPolice()) {
-            Compat.alertPolice(p.server, lost
-                    ? "§e[Animaux] §cAnimal perdu §f: " + what + " §7(maître : " + owner + (chip.isEmpty() ? "" : ", puce " + chip) + ") §7— vu en "
-                            + pet.blockPosition().getX() + " " + pet.blockPosition().getY() + " " + pet.blockPosition().getZ()
-                    : "§e[Animaux] §aAnimal retrouvé §f: " + what + " §7(maître : " + owner + ")");
-        }
+        boolean lost = !PetCarnet.isLost(pet);
+        PetCarnet.setLost(p, pet.getUUID(), pet, lost);
         msg(p, lost ? "§cAnimal signalé perdu. La police est prévenue." : "§aAnimal signalé retrouvé.");
     }
 

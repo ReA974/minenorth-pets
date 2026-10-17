@@ -100,6 +100,8 @@ public final class PetBook {
         pet.getPersistentData().put(COLLAR, c);
     }
 
+    public static void removeCollar(Entity pet) { pet.getPersistentData().remove(COLLAR); }
+
     public static void setLost(Entity pet, boolean lost) {
         if (hasCollar(pet)) pet.getPersistentData().getCompound(COLLAR).putBoolean("lost", lost);
     }

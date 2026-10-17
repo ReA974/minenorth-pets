@@ -39,5 +39,10 @@
   "gui.minenorthpets.menu.drop": "Poser",
   "gui.minenorthpets.menu.revive": "Réanimer",
   "gui.minenorthpets.menu.talk": "Faire parler",
-  "species.minenorthpets.gris_du_gabon": "Gris du Gabon"
+  "species.minenorthpets.gris_du_gabon": "Gris du Gabon",
+  "item.minenorthpets.carnet_sante": "Carnet de santé",
+  "gui.minenorthpets.book.lost": "Signaler perdu",
+  "gui.minenorthpets.book.found": "Signaler retrouvé",
+  "gui.minenorthpets.book.abandon": "Abandonner l'animal",
+  "gui.minenorthpets.book.confirm": "§c§lConfirmer (5 s)"
 }

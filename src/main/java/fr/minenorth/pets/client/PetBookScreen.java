@@ -1,5 +1,6 @@
 package fr.minenorth.pets.client;
 
+import fr.minenorth.pets.K9Net;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -12,18 +13,28 @@ public class PetBookScreen extends Screen {
     private static final int PAD = 14, LINE_H = 12;
 
     private final List<String> lines;
+    private final boolean withActions;
+    private final boolean lost;
+    private long armedUntil;
 
-    private PetBookScreen(List<String> lines) {
+    private PetBookScreen(List<String> lines, boolean withActions, boolean lost) {
         super(Component.translatable("gui.minenorthpets.book.title"));
         this.lines = lines;
+        this.withActions = withActions;
+        this.lost = lost;
     }
 
     public static void open(List<String> lines) {
-        Minecraft.getInstance().setScreen(new PetBookScreen(lines));
+        Minecraft.getInstance().setScreen(new PetBookScreen(lines, false, false));
+    }
+
+    /** Fiche du carnet de poche : boutons « perdu / retrouvé » et « abandonner » (confirmation par un second clic dans les 5 s). */
+    public static void openWithActions(List<String> lines, boolean lost) {
+        Minecraft.getInstance().setScreen(new PetBookScreen(lines, true, lost));
     }
 
     private int panelWidth() {
-        int w = 180;
+        int w = withActions ? 340 - PAD * 2 : 180;
         for (String l : lines) w = Math.max(w, font.width(l));
         return Math.min(w, width - 40) + PAD * 2;
     }
@@ -33,8 +44,30 @@ public class PetBookScreen extends Screen {
     @Override
     protected void init() {
         int w = panelWidth(), top = (height - panelHeight()) / 2;
-        addRenderableWidget(new PetMenuScreen.RoundButton((width - 100) / 2, top + panelHeight() - PAD - 22, 100, 22,
-                Component.translatable("gui.minenorthpets.book.close"), b -> onClose()));
+        int y = top + panelHeight() - PAD - 22;
+        if (!withActions) {
+            addRenderableWidget(new PetMenuScreen.RoundButton((width - 100) / 2, y, 100, 22, Component.translatable("gui.minenorthpets.book.close"), b -> onClose()));
+            return;
+        }
+        int x = (width - 308) / 2;
+        addRenderableWidget(new PetMenuScreen.RoundButton(x, y, 100, 22,
+                Component.translatable(lost ? "gui.minenorthpets.book.found" : "gui.minenorthpets.book.lost"), b -> {
+            K9Net.CHANNEL.sendToServer(new K9Net.BookAction(0));
+            onClose();
+        }));
+        PetMenuScreen.RoundButton abandon = new PetMenuScreen.RoundButton(x + 104, y, 100, 22, Component.translatable("gui.minenorthpets.book.abandon"), b -> {});
+        abandon.setOnPress(b -> {
+            boolean armed = System.currentTimeMillis() < armedUntil;
+            K9Net.CHANNEL.sendToServer(new K9Net.BookAction(1));
+            if (armed) {
+                onClose();
+            } else {
+                armedUntil = System.currentTimeMillis() + 5000;
+                abandon.setMessage(Component.translatable("gui.minenorthpets.book.confirm"));
+            }
+        });
+        addRenderableWidget(abandon);
+        addRenderableWidget(new PetMenuScreen.RoundButton(x + 208, y, 100, 22, Component.translatable("gui.minenorthpets.book.close"), b -> onClose()));
     }
 
     @Override

@@ -60,6 +60,15 @@ public final class PetKo {
         }
     }
 
+    /** Efface l'état inconscient sans message (abandon de l'animal). */
+    public static void clear(TamableAnimal pet) {
+        if (!isUnconscious(pet)) return;
+        pet.getPersistentData().remove(DEADLINE_TAG);
+        pet.getPersistentData().remove(WARNED_TAG);
+        pet.setInvulnerable(false);
+        pet.setNoAi(false);
+    }
+
     /** Réanimation par un vétérinaire (ou un opérateur) : au moins 50 % de vie, IA rétablie, ligne dans le carnet. */
     public static void revive(ServerPlayer vet, TamableAnimal pet) {
         if (!isUnconscious(pet)) {

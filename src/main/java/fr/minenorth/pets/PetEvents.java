@@ -64,6 +64,18 @@ public final class PetEvents {
         return true;
     }
 
+    /** Chargement d'un animal du registre des carnets : abandon en attente appliqué, drapeau « perdu » aligné. */
+    @SubscribeEvent
+    public static void onJoinRegistry(EntityJoinLevelEvent ev) {
+        if (!ev.getLevel().isClientSide() && ev.getEntity() instanceof TamableAnimal pet && isPet(pet)) PetCarnet.applyOnLoad(pet);
+    }
+
+    /** Dernier lieu connu : mis à jour quand un animal à collier quitte le monde (déchargement, changement de dimension). */
+    @SubscribeEvent
+    public static void onLeaveRegistry(net.minecraftforge.event.entity.EntityLeaveLevelEvent ev) {
+        if (!ev.getLevel().isClientSide() && ev.getEntity() instanceof TamableAnimal pet && isPet(pet) && PetBook.hasCollar(pet)) PetCarnet.touch(pet);
+    }
+
     @SubscribeEvent
     public static void onJoin(EntityJoinLevelEvent ev) {
         if (ev.getLevel().isClientSide() || !(ev.getEntity() instanceof TamableAnimal pet) || !isPollyPet(pet)) return;
@@ -146,17 +158,23 @@ public final class PetEvents {
             return;
         }
         String owner = Compat.displayName(p.server, pet.getOwnerUUID(), PetBook.collarOwner(pet));
-        p.displayClientMessage(Component.literal("§fCet animal appartient à §e" + owner + (PetBook.isLost(pet) ? " §c§l(signalé perdu)" : "")), true);
+        p.displayClientMessage(Component.literal("§fCet animal appartient à §e" + owner + (PetCarnet.isLost(pet) ? " §c§l(signalé perdu)" : "")), true);
     }
 
     private static void putCollar(ServerPlayer p, TamableAnimal pet, ItemStack st) {
         if (PetBook.hasCollar(pet)) {
-            p.displayClientMessage(Component.literal("§7Cet animal porte déjà un collier."), true);
+            if (PetsConfig.carnetEnabled()) {
+                PetCarnet.issue(p, pet);
+                p.displayClientMessage(Component.literal("§aNouveau carnet de santé remis : l'ancien n'est plus valable."), true);
+            } else {
+                p.displayClientMessage(Component.literal("§7Cet animal porte déjà un collier."), true);
+            }
             return;
         }
         String owner = Compat.displayName(p.server, p.getUUID(), p.getGameProfile().getName());
         PetBook.putCollar(pet, owner);
         PetBook.ensure(pet);
+        PetCarnet.issue(p, pet);
         if (!p.getAbilities().instabuild) st.shrink(1);
         p.displayClientMessage(Component.literal("§aCollier posé : cet animal est enregistré au nom de §e" + owner + "§a."), true);
     }

@@ -30,7 +30,7 @@ import java.util.function.Supplier;
 public final class K9Net {
     private K9Net() {}
 
-    private static final String PROTOCOL = "4";
+    private static final String PROTOCOL = "5";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(MineNorthPets.MOD_ID, "k9"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
@@ -132,6 +132,31 @@ public final class K9Net {
         }
     }
 
+    /** Fiche du carnet de santé de poche (avec les boutons « perdu / retrouvé » et « abandonner »). */
+    public record BookOpen(java.util.List<String> lines, boolean lost) {
+        void encode(FriendlyByteBuf b) { b.writeCollection(lines, (buf, line) -> buf.writeUtf(line, 300)); b.writeBoolean(lost); }
+        static BookOpen decode(FriendlyByteBuf b) { return new BookOpen(b.readList(buf -> buf.readUtf(300)), b.readBoolean()); }
+
+        void handle(Supplier<NetworkEvent.Context> ctx) {
+            ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> fr.minenorth.pets.client.PetBookScreen.openWithActions(lines, lost)));
+            ctx.get().setPacketHandled(true);
+        }
+    }
+
+    /** Bouton de la fiche du carnet de poche : 0 = perdu / retrouvé, 1 = abandonner (confirmation côté serveur). */
+    public record BookAction(int kind) {
+        void encode(FriendlyByteBuf b) { b.writeVarInt(kind); }
+        static BookAction decode(FriendlyByteBuf b) { return new BookAction(b.readVarInt()); }
+
+        void handle(Supplier<NetworkEvent.Context> ctx) {
+            ServerPlayer p = ctx.get().getSender();
+            ctx.get().enqueueWork(() -> {
+                if (p != null) PetCarnet.action(p, kind);
+            });
+            ctx.get().setPacketHandled(true);
+        }
+    }
+
     /** Contenu du carnet de santé, envoyé au joueur qui le demande. */
     public record Book(java.util.List<String> lines) {
         void encode(FriendlyByteBuf b) { b.writeCollection(lines, (buf, line) -> buf.writeUtf(line, 300)); }
@@ -151,6 +176,8 @@ public final class K9Net {
         CHANNEL.registerMessage(4, Action.class, Action::encode, Action::decode, Action::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(5, Remark.class, Remark::encode, Remark::decode, Remark::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(7, CarrySync.class, CarrySync::encode, CarrySync::decode, CarrySync::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(8, BookOpen.class, BookOpen::encode, BookOpen::decode, BookOpen::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(9, BookAction.class, BookAction::encode, BookAction::decode, BookAction::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(6, Book.class, Book::encode, Book::decode, Book::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
     }
 
